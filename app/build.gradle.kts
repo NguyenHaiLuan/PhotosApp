@@ -33,6 +33,10 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+
+    buildFeatures {
+        viewBinding = true
+    }
 }
 
 dependencies {
@@ -45,4 +49,11 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // Lottie
+    implementation("com.airbnb.android:lottie:3.7.0")
+    //Glide
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    //Styleable Toast
+    implementation ("io.github.muddz:styleabletoast:2.4.0")
 }

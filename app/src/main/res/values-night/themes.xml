@@ -4,4 +4,42 @@
         <!-- Customize your dark theme here. -->
         <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
     </style>
+
+    <style name="circular">
+        <item name="cornerSize">30%</item>
+    </style>
+
+    <style name="circle">
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="success_toast">
+        <item name="stTextColor">#fff</item>
+        <item name="stFont">@font/exo2_bold</item>
+        <item name="stTextSize">14sp</item>
+        <item name="stColorBackground">@color/xanhnhat</item>
+        <item name="stIconStart">@drawable/baseline_check_circle_outline_24</item>
+        <item name="stRadius">10dp</item>
+        <item name="stLength">SHORT</item>
+    </style>
+
+    <style name="error_toast">
+        <item name="stTextColor">#fff</item>
+        <item name="stFont">@font/exo2_bold</item>
+        <item name="stTextSize">14sp</item>
+        <item name="stColorBackground">#FF5E65</item>
+        <item name="stIconStart">@drawable/baseline_error_outline_24</item>
+        <item name="stRadius">10dp</item>
+        <item name="stLength">SHORT</item>
+    </style>
+
+    <style name="warning_toast">
+        <item name="stTextColor">#fff</item>
+        <item name="stFont">@font/exo2_bold</item>
+        <item name="stTextSize">14sp</item>
+        <item name="stColorBackground">#CCAC40</item>
+        <item name="stIconStart">@drawable/baseline_miscellaneous_services_24</item>
+        <item name="stRadius">10dp</item>
+        <item name="stLength">SHORT</item>
+    </style>
 </resources>
