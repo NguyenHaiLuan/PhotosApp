@@ -5,16 +5,55 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:background="@color/white"
+    tools:context=".activity.MainActivity">
 
     <TextView
+        android:id="@+id/titleMain"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/exo2_bold"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="Ảnh"
+        android:textSize="20sp"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/text_Notify"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello"
-        app:layout_constraintTop_toTopOf="parent"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:fontFamily="@font/exo2"
+        android:gravity="center"
+        android:text="Vui lòng truy cập cài đặt và cấp quyền Bộ nhớ trong cho ứng dụng để tiếp tục sử dụng"
+        android:textColor="#A81616"
+        android:textSize="17sp"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        android:textSize="20sp"/>
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/listImageRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginBottom="5dp"
+        app:layout_constraintBottom_toTopOf="@id/btn_addPhoto"
+        app:layout_constraintTop_toBottomOf="@+id/titleMain" />
+
+    <ImageView
+        android:id="@+id/btn_addPhoto"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="3dp"
+        android:background="@drawable/tran_btn_solid"
+        android:scaleType="center"
+        android:src="@drawable/baseline_add_a_photo_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
