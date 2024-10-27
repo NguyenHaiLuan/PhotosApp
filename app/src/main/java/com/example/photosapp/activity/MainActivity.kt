@@ -2,7 +2,9 @@ package com.example.photosapp.activity
 
 import android.Manifest
 import android.content.ContentUris
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -29,6 +31,11 @@ class MainActivity : AppCompatActivity() {
         initUI()
         //yêu cầu cấp quyền
         checkUserPermission()
+
+        binding.btnAddPhoto.setOnClickListener {
+            val intent = Intent(this@MainActivity, CameraActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun checkUserPermission() {
