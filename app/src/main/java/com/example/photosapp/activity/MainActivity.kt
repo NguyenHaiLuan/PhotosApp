@@ -5,8 +5,10 @@ import android.content.ContentUris
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.provider.MediaStore.Audio.Media
 import android.view.View
@@ -21,6 +23,7 @@ import com.example.photosapp.R
 import com.example.photosapp.adapter.PhotoAdapter
 import com.example.photosapp.databinding.ActivityMainBinding
 import com.example.photosapp.model.Photo
+import java.io.File
 import kotlin.math.ceil
 
 class MainActivity : AppCompatActivity() {
@@ -85,10 +88,13 @@ class MainActivity : AppCompatActivity() {
         val projection = arrayOf(
             MediaStore.Images.Media._ID,
             MediaStore.Images.Media.DISPLAY_NAME,
-
+            MediaStore.Images.Media.DATE_ADDED
         )
 
-        contentResolver.query(uri, projection, null, null, null)
+        // Sắp xếp theo DATE_ADDED giảm dần để lấy ảnh mới nhất lên trước
+        val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+
+        contentResolver.query(uri, projection, null, null, sortOrder)
             .use {cursor->
                 cursor?.let {
                     while (cursor.moveToNext()){
@@ -123,5 +129,8 @@ class MainActivity : AppCompatActivity() {
             binding.textNotify.visibility = View.GONE
             setUpRecyclerView()
         }
+
+        loadAllImages()
     }
+
 }

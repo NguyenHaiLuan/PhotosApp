@@ -20,7 +20,7 @@ fun appSettingOpen(context: Context){
 
 fun warningPermissionDialog(context: Context,listener : DialogInterface.OnClickListener){
     MaterialAlertDialogBuilder(context)
-        .setMessage("Ứng dụng cần tất cả các quyền cần thiết!")
+        .setMessage("Ứng dụng cần các quyền cần thiết để hoạt động! Vui lòng cung cấp đầy đủ tất cả các quyền!")
         .setCancelable(false)
         .setPositiveButton("Ok",listener)
         .create()

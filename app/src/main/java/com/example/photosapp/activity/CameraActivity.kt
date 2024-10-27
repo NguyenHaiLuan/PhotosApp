@@ -1,6 +1,7 @@
 package com.example.photosapp.activity
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +16,7 @@ import com.example.photosapp.databinding.ActivityCameraBinding
 import android.content.DialogInterface
 import android.os.Environment
 import android.print.PrintAttributes.Resolution
+import android.provider.MediaStore
 import android.util.Log
 import android.view.Surface
 import android.view.WindowManager
@@ -46,7 +48,6 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var cameraSelector : CameraSelector
     private var lensFacing = CameraSelector.LENS_FACING_BACK
 
-    private val multiplePermissionId = 609
     private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= 33) {
         arrayListOf(
             Manifest.permission.CAMERA
@@ -73,18 +74,47 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun takePhoto() {
-        val imageFolder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Images")
+        val imageFolder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "CameraBC")
+
 
         if (!imageFolder.exists()) {
             imageFolder.mkdirs()
         }
 
+        // tên file: IMG_2024-06-09_6-9-69.jpg
         val fileName = "IMG_"+SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", Locale.getDefault()).format(System.currentTimeMillis()) + ".jpeg"
-        val imageFile = File(imageFolder, fileName)
 
-        val outOption = ImageCapture.OutputFileOptions.Builder(imageFile).build()
+        val contentValue = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P){
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraBC")
+            }
+        }
 
-        imageCapture.takePicture(outOption, ContextCompat.getMainExecutor(this), object : ImageCapture.OnImageSavedCallback {
+        val metadata = ImageCapture.Metadata().apply {
+            isReversedHorizontal = (lensFacing == CameraSelector.LENS_FACING_FRONT)
+        }
+
+        val outOption =
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                OutputFileOptions.Builder(
+                        contentResolver,
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        contentValue)
+                    .setMetadata(metadata)
+                    .build()
+            } else {
+                val imageFile = File(imageFolder, fileName)
+                OutputFileOptions.Builder(imageFile)
+                    .setMetadata(metadata)
+                    .build()
+            }
+
+        imageCapture.takePicture(
+            outOption,
+            ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                 StyleableToast.makeText(this@CameraActivity, "${outputFileResults.savedUri}", R.style.success_toast).show()
             }
@@ -134,13 +164,11 @@ class CameraActivity : AppCompatActivity() {
     // xác định tỉ lệ khung hình phù hợp
     private fun aspectRatio(width:Int, height:Int):Int{
         val priviewRatio = maxOf(width, height).toDouble() / minOf(width,height)
-        var result:Int
 
-        if (abs(priviewRatio - 4.0/3.0) <= abs(priviewRatio - 16.0 / 9.0))
-            result = AspectRatio.RATIO_4_3
+        return if (abs(priviewRatio - 4.0/3.0) <= abs(priviewRatio - 16.0 / 9.0))
+            AspectRatio.RATIO_4_3
         else
-            result = AspectRatio.RATIO_16_9
-        return result
+            AspectRatio.RATIO_16_9
     }
 
     private fun bindCameraUseCases() {
@@ -187,11 +215,7 @@ class CameraActivity : AppCompatActivity() {
             }
         }
         if (listPermissionNeeded.isNotEmpty()) {
-            ActivityCompat.requestPermissions(
-                this,
-                listPermissionNeeded.toTypedArray(),
-                multiplePermissionId
-            )
+            ActivityCompat.requestPermissions(this, listPermissionNeeded.toTypedArray(), 609)
             return false
         }
         return true
@@ -204,7 +228,7 @@ class CameraActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode == multiplePermissionId) {
+        if (requestCode == 609) {
             if (grantResults.isNotEmpty()) {
                 var isGrant = true
                 for (element in grantResults) {
@@ -254,8 +278,8 @@ class CameraActivity : AppCompatActivity() {
                 lensFacing = CameraSelector.LENS_FACING_BACK
             else
                 lensFacing = CameraSelector.LENS_FACING_FRONT
+            bindCameraUseCases()
         }
-        bindCameraUseCases()
     }
 
     private fun btnCapture_EventClickListener() {
