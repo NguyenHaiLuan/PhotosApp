@@ -33,7 +33,7 @@ class PhotoAdapter (
 
         Glide.with(context)
             .load(photo.uri)
-            .placeholder(R.drawable.img)
+            .placeholder(R.drawable.img_place_holder)
             .into(holder.img)
 
     }

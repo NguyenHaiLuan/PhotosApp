@@ -50,4 +50,18 @@
         android:layout_marginBottom="15dp"
         app:layout_constraintHorizontal_bias="0.95"
         android:layout_marginTop="15dp"/>
+
+    <ImageView
+        android:id="@+id/imgView_recent_image"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toLeftOf="@+id/btn_take_photo"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:src="@drawable/img_place_holder"
+        android:scaleType="centerCrop"
+        android:layout_marginBottom="30dp"
+        android:background="@drawable/rounded_corners"
+        app:layout_constraintHorizontal_bias="0.3"
+        android:clipToOutline="true"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -32,22 +32,12 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initUI()
-        //yêu cầu cấp quyền
-        checkUserPermission()
+
+        setUpRecyclerView() // Set up recycler View để load all hình ảnh
 
         binding.btnAddPhoto.setOnClickListener {
-            val intent = Intent(this@MainActivity, CameraActivity::class.java)
-            startActivity(intent)
+            finish()
         }
-    }
-
-    private fun checkUserPermission() {
-        // kiểm tra ứng dụng có được cấp quyền
-         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
-             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),69)
-         } else{
-             setUpRecyclerView()
-         }
     }
 
     private fun setUpRecyclerView() {
@@ -55,24 +45,6 @@ class MainActivity : AppCompatActivity() {
         adapter = PhotoAdapter(this, photoList)
         binding.listImageRecyclerView.adapter = adapter
         binding.listImageRecyclerView.layoutManager = GridLayoutManager(this, 4)
-    }
-
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 69) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                binding.textNotify.visibility = View.GONE
-                loadAllImages()
-            } else {
-                // Hiển thị thông báo và button nếu quyền bị từ chối
-                binding.textNotify.visibility = View.VISIBLE
-            }
-        }
     }
 
     private fun loadAllImages() : List<Photo>{
@@ -124,13 +96,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        //nếu đã được cấp quyền thì list ảnh ra
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            binding.textNotify.visibility = View.GONE
-            setUpRecyclerView()
-        }
-
         loadAllImages()
     }
-
 }

@@ -14,6 +14,8 @@ import androidx.core.view.WindowInsetsCompat
 import com.example.photosapp.R
 import com.example.photosapp.databinding.ActivityCameraBinding
 import android.content.DialogInterface
+import android.content.Intent
+import android.media.MediaScannerConnection
 import android.os.Environment
 import android.print.PrintAttributes.Resolution
 import android.provider.MediaStore
@@ -48,14 +50,17 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var cameraSelector : CameraSelector
     private var lensFacing = CameraSelector.LENS_FACING_BACK
 
+    //List các quyền cần cấp
     private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= 33) {
         arrayListOf(
-            Manifest.permission.CAMERA
+            Manifest.permission.CAMERA,
+            Manifest.permission.READ_EXTERNAL_STORAGE
         )
     } else {
         arrayListOf(
             Manifest.permission.CAMERA,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE
         )
     }
 
@@ -71,11 +76,17 @@ class CameraActivity : AppCompatActivity() {
         btnCapture_EventClickListener()  //sự kiện nút chụp ảnh
         btnFlip_EventClickListener()  //sự kiện nút đổi camera
         btnFlash_EventClickListener()  //sự kiện nút flash
+
+        //sự kiện khi nhấn vào ảnh gần đây
+
+        binding.imgViewRecentImage.setOnClickListener {
+            val intent = Intent(this@CameraActivity, MainActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun takePhoto() {
         val imageFolder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "CameraBC")
-
 
         if (!imageFolder.exists()) {
             imageFolder.mkdirs()
@@ -92,6 +103,7 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
+        // Chống ảnh bị lật ngược khi chụp bằng camera trước
         val metadata = ImageCapture.Metadata().apply {
             isReversedHorizontal = (lensFacing == CameraSelector.LENS_FACING_FRONT)
         }
@@ -116,7 +128,14 @@ class CameraActivity : AppCompatActivity() {
             ContextCompat.getMainExecutor(this),
             object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                StyleableToast.makeText(this@CameraActivity, "${outputFileResults.savedUri}", R.style.success_toast).show()
+                val savedUri = outputFileResults.savedUri ?: return
+
+                StyleableToast.makeText(this@CameraActivity, "Thành công! Uri của ảnh: $savedUri", R.style.success_toast).show()
+                // Cập nhật MediaStore với file vừa chụp
+                MediaScannerConnection.scanFile(this@CameraActivity, arrayOf(savedUri.path), null) { path, uri ->
+                    Log.d("CameraActivity", "File scanned into MediaStore: $path, Uri: $uri")
+                }
+                Log.d("image_uri","${outputFileResults.savedUri}")
             }
 
             override fun onError(exception: ImageCaptureException) {
