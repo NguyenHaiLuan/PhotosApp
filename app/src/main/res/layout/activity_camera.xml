@@ -13,70 +13,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <ImageButton
-        android:id="@+id/btn_take_photo"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:layout_marginBottom="15dp"
-        android:background="@drawable/tran_btn_no_solid"
-        android:scaleType="centerCrop"
-        android:src="@drawable/baseline_camera_24"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
-
-    <ImageButton
-        android:id="@+id/btn_flash"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:background="@drawable/tran_btn_no_solid"
-        android:scaleType="centerCrop"
-        android:src="@drawable/baseline_flash_on_24"
-        app:layout_constraintBottom_toTopOf="@+id/btn_take_photo"
-        android:layout_marginBottom="15dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@+id/txt_ratioAspect"
-        app:layout_constraintHorizontal_chainStyle="spread"/>
-
-    <TextView
-        android:id="@+id/txt_ratioAspect"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="16:9"
-        android:fontFamily="@font/bungee"
-        android:textSize="18sp"
-        android:textColor="@color/white"
-        app:layout_constraintLeft_toRightOf="@+id/btn_flash"
-        app:layout_constraintRight_toLeftOf="@+id/btn_flip_camera"
-        app:layout_constraintBottom_toTopOf="@+id/btn_take_photo"
-        android:layout_marginBottom="8dp"/>
-
-
-    <ImageButton
-        android:id="@+id/btn_flip_camera"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:background="@drawable/tran_btn_no_solid"
-        android:scaleType="centerCrop"
-        android:src="@drawable/baseline_flip_camera_android_24"
-        app:layout_constraintLeft_toRightOf="@+id/txt_ratioAspect"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/btn_take_photo"
-        android:layout_marginBottom="15dp"/>
-
-    <TextView
-        android:id="@+id/txtZoomRatio"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="-- 1x --"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/txt_ratioAspect"
-        android:layout_marginBottom="5dp"/>
-
-
     <ImageView
         android:id="@+id/imgView_recent_image"
         android:layout_width="40dp"
@@ -88,6 +24,107 @@
         android:src="@drawable/img_place_holder"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintHorizontal_bias="0.3"
+        app:layout_constraintHorizontal_chainStyle="spread"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toLeftOf="@+id/btn_take_photo" />
+
+    <ImageButton
+        android:id="@+id/btn_take_photo"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:layout_marginBottom="15dp"
+        android:background="@drawable/tran_btn_no_solid"
+        android:scaleType="centerCrop"
+        android:src="@drawable/baseline_camera_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@+id/imgView_recent_image"
+        app:layout_constraintRight_toLeftOf="@id/btn_change_mode_of_camera" />
+
+    <ImageButton
+        android:id="@+id/btn_change_mode_of_camera"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="25dp"
+        android:background="@drawable/tran_btn_no_solid"
+        android:scaleType="centerCrop"
+        android:src="@drawable/baseline_videocam_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@+id/btn_take_photo"
+        app:layout_constraintRight_toRightOf="parent" />
+
+
+    <ImageButton
+        android:id="@+id/btn_flash"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginBottom="15dp"
+        android:background="@drawable/tran_btn_no_solid"
+        android:scaleType="centerCrop"
+        android:src="@drawable/baseline_flash_on_24"
+        app:layout_constraintBottom_toTopOf="@+id/btn_take_photo"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@+id/txt_ratioAspect" />
+
+    <TextView
+        android:id="@+id/txt_ratioAspect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:fontFamily="@font/bungee"
+        android:text="16:9"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/btn_take_photo"
+        app:layout_constraintLeft_toRightOf="@+id/btn_flash"
+        app:layout_constraintRight_toLeftOf="@+id/btn_flip_camera" />
+
+
+    <ImageButton
+        android:id="@+id/btn_flip_camera"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginBottom="15dp"
+        android:background="@drawable/tran_btn_no_solid"
+        android:scaleType="centerCrop"
+        android:src="@drawable/baseline_flip_camera_ios_24"
+        app:layout_constraintBottom_toTopOf="@+id/btn_take_photo"
+        app:layout_constraintLeft_toRightOf="@+id/txt_ratioAspect"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <ImageButton
+        android:id="@+id/btn_zoom_out"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginRight="5dp"
+        android:background="@drawable/tran_btn_solid"
+        android:src="@drawable/baseline_horizontal_rule_24"
+        app:layout_constraintBottom_toTopOf="@+id/txt_ratioAspect"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@+id/txtZoomRatio" />
+
+    <TextView
+        android:id="@+id/txtZoomRatio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:text="-- 1x --"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/txt_ratioAspect"
+        app:layout_constraintLeft_toRightOf="@+id/btn_zoom_out"
+        app:layout_constraintRight_toLeftOf="@+id/btn_zoom_in" />
+
+    <ImageButton
+        android:id="@+id/btn_zoom_in"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginLeft="5dp"
+        android:background="@drawable/tran_btn_solid"
+        android:src="@drawable/baseline_add_24"
+        app:layout_constraintBottom_toTopOf="@+id/txt_ratioAspect"
+        app:layout_constraintLeft_toRightOf="@id/txtZoomRatio"
+        app:layout_constraintRight_toRightOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

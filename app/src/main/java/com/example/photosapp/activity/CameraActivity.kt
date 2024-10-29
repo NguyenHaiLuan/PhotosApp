@@ -2,25 +2,15 @@ package com.example.photosapp.activity
 
 import android.Manifest
 import android.content.ContentValues
-import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import com.example.photosapp.R
-import com.example.photosapp.databinding.ActivityCameraBinding
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.MediaScannerConnection
+import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.print.PrintAttributes.Resolution
 import android.provider.MediaStore
 import android.util.Log
 import android.view.MotionEvent
@@ -28,21 +18,26 @@ import android.view.OrientationEventListener
 import android.view.ScaleGestureDetector
 import android.view.Surface
 import android.view.WindowManager
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCapture.OnImageCapturedCallback
 import androidx.camera.core.ImageCapture.OutputFileOptions
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.OutputOptions
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.constraintlayout.widget.ConstraintSet.Constraint
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.example.photosapp.R
+import com.example.photosapp.databinding.ActivityCameraBinding
 import com.example.photosapp.utils.appSettingOpen
 import com.example.photosapp.utils.warningPermissionDialog
 import io.github.muddz.styleabletoast.StyleableToast
@@ -50,21 +45,21 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
 class CameraActivity : AppCompatActivity() {
 
     //------------------------------ KHAI BÁO BIẾN---------------------------------------------
     private lateinit var binding: ActivityCameraBinding
-    private lateinit var imageCapture : ImageCapture
+    private lateinit var imageCapture: ImageCapture
     private lateinit var cameraProvider: ProcessCameraProvider
     private lateinit var camera: Camera
-    private lateinit var cameraSelector : CameraSelector
+    private lateinit var cameraSelector: CameraSelector
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var aspectRatio = AspectRatio.RATIO_16_9
-    private var orientationEventListener : OrientationEventListener?=null
+    private var orientationEventListener: OrientationEventListener? = null
 
     private var isBackClicked = false
+
     //List các quyền cần cấp
     private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= 33) {
         arrayListOf(
@@ -106,7 +101,12 @@ class CameraActivity : AppCompatActivity() {
         val rotation = getDisplayRotation()
 
         val resolutionSelector = ResolutionSelector.Builder()
-            .setAspectRatioStrategy(AspectRatioStrategy(aspectRatio, AspectRatioStrategy.FALLBACK_RULE_AUTO))
+            .setAspectRatioStrategy(
+                AspectRatioStrategy(
+                    aspectRatio,
+                    AspectRatioStrategy.FALLBACK_RULE_AUTO
+                )
+            )
             .build()
 
         val preview = Preview.Builder()
@@ -127,8 +127,8 @@ class CameraActivity : AppCompatActivity() {
             .requireLensFacing(lensFacing)
             .build()
 
-            orientationEventListener = object : OrientationEventListener(this) {
-            override fun onOrientationChanged(orientation : Int) {
+        orientationEventListener = object : OrientationEventListener(this) {
+            override fun onOrientationChanged(orientation: Int) {
                 // giám sát sự thay đổi của định hướng thiết bị và cập nhật targetRotation của imageCapture
                 // để đảm bảo ảnh chụp có định hướng phù hợp.
                 imageCapture.targetRotation = when (orientation) {
@@ -145,25 +145,32 @@ class CameraActivity : AppCompatActivity() {
             cameraProvider.unbindAll()
             camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
             setUpZoom()
-        } catch (e:Exception){
+            setupZoomButtons()
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     private fun takePhoto() {
-        val imageFolder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "CameraBC")
+        val imageFolder = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+            "CameraBC"
+        )
 
         if (!imageFolder.exists()) {
             imageFolder.mkdirs()
         }
 
         // tên file: IMG_2024-06-09_6-9-69.jpg
-        val fileName = "IMG_"+SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS", Locale.getDefault()).format(System.currentTimeMillis()) + ".jpeg"
+        val fileName = "IMG_" + SimpleDateFormat(
+            "yyyy-MM-dd_HH-mm-ss-SSS",
+            Locale.getDefault()
+        ).format(System.currentTimeMillis()) + ".jpeg"
 
         val contentValue = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P){
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
                 put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraBC")
             }
         }
@@ -176,9 +183,10 @@ class CameraActivity : AppCompatActivity() {
         val outOption =
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
                 OutputFileOptions.Builder(
-                        contentResolver,
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        contentValue)
+                    contentResolver,
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValue
+                )
                     .setMetadata(metadata)
                     .build()
             } else {
@@ -192,21 +200,33 @@ class CameraActivity : AppCompatActivity() {
             outOption,
             ContextCompat.getMainExecutor(this),
             object : ImageCapture.OnImageSavedCallback {
-            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                val savedUri = outputFileResults.savedUri ?: return
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    val savedUri = outputFileResults.savedUri ?: return
 
-                StyleableToast.makeText(this@CameraActivity, "Thành công! Uri của ảnh: $savedUri", R.style.success_toast).show()
-                // Cập nhật MediaStore với file vừa chụp
-                MediaScannerConnection.scanFile(this@CameraActivity, arrayOf(savedUri.path), null) { path, uri ->
-                    Log.d("CameraActivity", "File scanned into MediaStore: $path, Uri: $uri")
+                    StyleableToast.makeText(
+                        this@CameraActivity,
+                        "Thành công! Uri của ảnh: $savedUri",
+                        R.style.success_toast
+                    ).show()
+                    // Cập nhật MediaStore với file vừa chụp
+                    MediaScannerConnection.scanFile(
+                        this@CameraActivity,
+                        arrayOf(savedUri.path),
+                        null
+                    ) { path, uri ->
+                        Log.d("CameraActivity", "File scanned into MediaStore: $path, Uri: $uri")
+                    }
+                    Log.d("image_uri", "${outputFileResults.savedUri}")
                 }
-                Log.d("image_uri","${outputFileResults.savedUri}")
-            }
 
-            override fun onError(exception: ImageCaptureException) {
-                StyleableToast.makeText(this@CameraActivity, "Lỗi: ${exception.message}", R.style.error_toast).show()
-            }
-        })
+                override fun onError(exception: ImageCaptureException) {
+                    StyleableToast.makeText(
+                        this@CameraActivity,
+                        "Lỗi: ${exception.message}",
+                        R.style.error_toast
+                    ).show()
+                }
+            })
     }
 
     private fun setUpZoom() {
@@ -245,15 +265,46 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupZoomButtons() {
+
+        binding.btnZoomIn.setOnClickListener {
+            val currentZoomRatio = camera.cameraInfo.zoomState.value?.zoomRatio ?: 1f
+            val newZoomRatio = currentZoomRatio + 0.5f // Tăng zoom ratio lên 0.5
+            camera.cameraControl.setZoomRatio(
+                newZoomRatio.coerceAtMost(
+                    camera.cameraInfo.zoomState.value?.maxZoomRatio ?: newZoomRatio
+                )
+            )
+            updateZoomRatioText()
+        }
+
+        binding.btnZoomOut.setOnClickListener {
+            val currentZoomRatio = camera.cameraInfo.zoomState.value?.zoomRatio ?: 1f
+            val newZoomRatio = currentZoomRatio - 0.5f // Giảm zoom ratio xuống 0.5
+            camera.cameraControl.setZoomRatio(
+                newZoomRatio.coerceAtLeast(
+                    camera.cameraInfo.zoomState.value?.minZoomRatio ?: newZoomRatio
+                )
+            )
+            updateZoomRatioText()
+        }
+    }
+
+    private fun updateZoomRatioText() {
+        camera.cameraInfo.zoomState.observe(this) { zoomState ->
+            val zoomRatio = zoomState.zoomRatio
+            binding.txtZoomRatio.text = "${"%.1f".format(zoomRatio)}x"
+        }
+    }
 
 
     private fun btnChangeAspectRatio_EventClickListener() {
         binding.txtRatioAspect.setOnClickListener {
-            if (aspectRatio  == AspectRatio.RATIO_16_9){
+            if (aspectRatio == AspectRatio.RATIO_16_9) {
                 aspectRatio = AspectRatio.RATIO_4_3
                 setAspectRatio("H,4:3")
                 binding.txtRatioAspect.text = "4:3"
-            } else{
+            } else {
                 aspectRatio = AspectRatio.RATIO_16_9
                 setAspectRatio("H,0:0")
                 binding.txtRatioAspect.text = "16:9"
@@ -265,7 +316,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun setAspectRatio(ratio: String) {
         binding.viewFinder.layoutParams = binding.viewFinder.layoutParams.apply {
-            if (this is ConstraintLayout.LayoutParams){
+            if (this is ConstraintLayout.LayoutParams) {
                 dimensionRatio = ratio
             }
         }
@@ -273,23 +324,33 @@ class CameraActivity : AppCompatActivity() {
     }
 
 
+    //Xử lí sự kiện khi người dùng bật flash
     private fun setIconFlash(camera: Camera) {
-        if (camera.cameraInfo.hasFlashUnit()){
-            if (camera.cameraInfo.torchState.value == 0){
+        if (camera.cameraInfo.hasFlashUnit()) {
+            if (camera.cameraInfo.torchState.value == 0) { // trạng thái flash = 0 (đang tắt)
                 camera.cameraControl.enableTorch(true)
                 binding.btnFlash.setImageResource(R.drawable.baseline_flash_off_24)
-            } else{
+            } else {
                 camera.cameraControl.enableTorch(false)
                 binding.btnFlash.setImageResource(R.drawable.baseline_flash_on_24)
             }
-        }else{
-            StyleableToast.makeText(this@CameraActivity, "Flash không khả dụng trên thiết bị này", R.style.error_toast).show()
-            binding.btnFlash.isEnabled = false
+        } else if (lensFacing == CameraSelector.LENS_FACING_FRONT) {// Nếu người dùng đang sử dụng camera trước
+            StyleableToast.makeText(
+                this@CameraActivity,
+                "Flash không khả dụng ở camera trước!",
+                R.style.error_toast
+            ).show()
+        } else{// Nếu không có flash
+            StyleableToast.makeText(
+                this@CameraActivity,
+                "Flash không khả dụng trên thiết bị này!",
+                R.style.error_toast
+            ).show()
         }
     }
 
     private fun getDisplayRotation(): Int {
-        val display = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+        val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             display
         } else {
             @Suppress("DEPRECATION")
@@ -300,7 +361,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     // Bắt đầu camera
-    private fun startCamera(){
+    private fun startCamera() {
         val cameraProviderFeature = ProcessCameraProvider.getInstance(this)
         cameraProviderFeature.addListener({
             cameraProvider = cameraProviderFeature.get()
@@ -312,7 +373,11 @@ class CameraActivity : AppCompatActivity() {
     private fun checkMultiplePermission(): Boolean {
         val listPermissionNeeded = arrayListOf<String>()
         for (permission in multiplePermissionNameList) {
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    permission
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
                 listPermissionNeeded.add(permission)
             }
         }
@@ -346,7 +411,11 @@ class CameraActivity : AppCompatActivity() {
                     for (permission in permissions) {
                         if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permission)
                         ) {
-                            if (ActivityCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
+                            if (ActivityCompat.checkSelfPermission(
+                                    this,
+                                    permission
+                                ) == PackageManager.PERMISSION_DENIED
+                            ) {
                                 someDenied = true
                             }
                         }
@@ -369,27 +438,36 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun btnFlash_EventClickListener() {
-        binding.btnFlash.setOnClickListener{
+
+        binding.btnFlash.setOnClickListener {
+            binding.btnFlash.isEnabled = false
             setIconFlash(camera)
+            Handler(Looper.getMainLooper()).postDelayed({
+                binding.btnFlash.isEnabled = true // Khôi phục trạng thái nút
+            }, 1500)
         }
+
     }
 
     private fun btnFlip_EventClickListener() {
         binding.btnFlipCamera.setOnClickListener {
-            if (lensFacing == CameraSelector.LENS_FACING_FRONT)
-                lensFacing = CameraSelector.LENS_FACING_BACK
-            else
-                lensFacing = CameraSelector.LENS_FACING_FRONT
-            bindCameraUseCases()
+            flipCamera()
         }
+    }
+
+    private fun flipCamera() {
+        if (lensFacing == CameraSelector.LENS_FACING_FRONT)
+            lensFacing = CameraSelector.LENS_FACING_BACK
+        else
+            lensFacing = CameraSelector.LENS_FACING_FRONT
+        bindCameraUseCases()
     }
 
     private fun btnCapture_EventClickListener() {
-        binding.btnTakePhoto.setOnClickListener{
+        binding.btnTakePhoto.setOnClickListener {
             takePhoto()
         }
     }
-
 
     // xử lí khi người dùng ấn back
     override fun onBackPressed() {
@@ -399,7 +477,11 @@ class CameraActivity : AppCompatActivity() {
         } // thoát ứng dụng
 
         isBackClicked = true
-        StyleableToast.makeText(this@CameraActivity, "Nhấn back lần nữa để thoát", R.style.warning_toast).show()
+        StyleableToast.makeText(
+            this@CameraActivity,
+            "Nhấn back lần nữa để thoát",
+            R.style.warning_toast
+        ).show()
 
         // Đặt lại biến isBackClicked về false sau 3 giây
         Handler(Looper.getMainLooper()).postDelayed({
@@ -418,6 +500,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    // huỷ tài nguyên để ngăn ngừa rỏ rì bộ nhớ
     override fun onDestroy() {
         super.onDestroy()
         cameraProvider.unbindAll()
@@ -432,5 +515,4 @@ class CameraActivity : AppCompatActivity() {
         super.onPause()
         orientationEventListener?.disable()
     }
-
 }
