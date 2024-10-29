@@ -9,6 +9,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.provider.MediaStore.Audio.Media
 import android.view.View
@@ -23,19 +25,21 @@ import com.example.photosapp.R
 import com.example.photosapp.adapter.PhotoAdapter
 import com.example.photosapp.databinding.ActivityMainBinding
 import com.example.photosapp.model.Photo
+import io.github.muddz.styleabletoast.StyleableToast
 import java.io.File
 import kotlin.math.ceil
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: PhotoAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initUI()
 
         setUpRecyclerView() // Set up recycler View để load all hình ảnh
 
-        binding.btnAddPhoto.setOnClickListener {
+        binding.btnBack.setOnClickListener {
             finish()
         }
     }

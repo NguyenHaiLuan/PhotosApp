@@ -2,6 +2,7 @@ package com.example.photosapp.activity
 
 import android.Manifest
 import android.content.ContentValues
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -17,9 +18,12 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.media.MediaScannerConnection
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.print.PrintAttributes.Resolution
 import android.provider.MediaStore
 import android.util.Log
+import android.view.OrientationEventListener
 import android.view.Surface
 import android.view.WindowManager
 import androidx.camera.core.AspectRatio
@@ -34,6 +38,8 @@ import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.OutputOptions
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet.Constraint
 import com.example.photosapp.utils.appSettingOpen
 import com.example.photosapp.utils.warningPermissionDialog
 import io.github.muddz.styleabletoast.StyleableToast
@@ -43,13 +49,18 @@ import java.util.Locale
 import kotlin.math.abs
 
 class CameraActivity : AppCompatActivity() {
+
+    //------------------------------ KHAI BÁO BIẾN---------------------------------------------
     private lateinit var binding: ActivityCameraBinding
     private lateinit var imageCapture : ImageCapture
     private lateinit var cameraProvider: ProcessCameraProvider
     private lateinit var camera: Camera
     private lateinit var cameraSelector : CameraSelector
     private var lensFacing = CameraSelector.LENS_FACING_BACK
+    private var aspectRatio = AspectRatio.RATIO_16_9
+    private var orientationEventListener : OrientationEventListener?=null
 
+    private var isBackClicked = false
     //List các quyền cần cấp
     private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= 33) {
         arrayListOf(
@@ -64,6 +75,8 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
+    // ---------------------------------CODE------------------------------------
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initUI()
@@ -76,12 +89,59 @@ class CameraActivity : AppCompatActivity() {
         btnCapture_EventClickListener()  //sự kiện nút chụp ảnh
         btnFlip_EventClickListener()  //sự kiện nút đổi camera
         btnFlash_EventClickListener()  //sự kiện nút flash
+        btnChangeAspectRatio_EventClickListener()  //sự kiện nút thay đổi tỉ lệ khung hình
 
         //sự kiện khi nhấn vào ảnh gần đây
-
         binding.imgViewRecentImage.setOnClickListener {
             val intent = Intent(this@CameraActivity, MainActivity::class.java)
             startActivity(intent)
+        }
+    }
+
+    private fun bindCameraUseCases() {
+        val rotation = getDisplayRotation()
+
+        val resolutionSelector = ResolutionSelector.Builder()
+            .setAspectRatioStrategy(AspectRatioStrategy(aspectRatio, AspectRatioStrategy.FALLBACK_RULE_AUTO))
+            .build()
+
+        val preview = Preview.Builder()
+            .setResolutionSelector(resolutionSelector)
+            .setTargetRotation(rotation)
+            .build()
+            .also {
+                it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
+            }
+
+        imageCapture = ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setResolutionSelector(resolutionSelector)
+            .setTargetRotation(rotation)
+            .build()
+
+        cameraSelector = CameraSelector.Builder()
+            .requireLensFacing(lensFacing)
+            .build()
+
+            orientationEventListener = object : OrientationEventListener(this) {
+            override fun onOrientationChanged(orientation : Int) {
+                // giám sát sự thay đổi của định hướng thiết bị và cập nhật targetRotation của imageCapture
+                // để đảm bảo ảnh chụp có định hướng phù hợp.
+                imageCapture.targetRotation = when (orientation) {
+                    in 45..134 -> Surface.ROTATION_270
+                    in 135..224 -> Surface.ROTATION_180
+                    in 225..314 -> Surface.ROTATION_90
+                    else -> Surface.ROTATION_0
+                }
+            }
+        }
+        orientationEventListener?.enable()
+
+        try {
+            cameraProvider.unbindAll()
+            camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+        } catch (e:Exception){
+            e.printStackTrace()
         }
     }
 
@@ -144,6 +204,31 @@ class CameraActivity : AppCompatActivity() {
         })
     }
 
+    private fun btnChangeAspectRatio_EventClickListener() {
+        binding.txtRatioAspect.setOnClickListener {
+            if (aspectRatio  == AspectRatio.RATIO_16_9){
+                aspectRatio = AspectRatio.RATIO_4_3
+                setAspectRatio("H,4:3")
+                binding.txtRatioAspect.text = "4:3"
+            } else{
+                aspectRatio = AspectRatio.RATIO_16_9
+                setAspectRatio("H,0:0")
+                binding.txtRatioAspect.text = "16:9"
+            }
+            // Thiết lập lại camera sau khi xử lí xong
+            bindCameraUseCases()
+        }
+    }
+
+    private fun setAspectRatio(ratio: String) {
+        binding.viewFinder.layoutParams = binding.viewFinder.layoutParams.apply {
+            if (this is ConstraintLayout.LayoutParams){
+                dimensionRatio = ratio
+            }
+        }
+        binding.viewFinder.requestLayout()
+    }
+
 
     private fun setIconFlash(camera: Camera) {
         if (camera.cameraInfo.hasFlashUnit()){
@@ -180,52 +265,7 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    // xác định tỉ lệ khung hình phù hợp
-    private fun aspectRatio(width:Int, height:Int):Int{
-        val priviewRatio = maxOf(width, height).toDouble() / minOf(width,height)
-
-        return if (abs(priviewRatio - 4.0/3.0) <= abs(priviewRatio - 16.0 / 9.0))
-            AspectRatio.RATIO_4_3
-        else
-            AspectRatio.RATIO_16_9
-    }
-
-    private fun bindCameraUseCases() {
-        val screenAspectRatio = aspectRatio(binding.viewFinder.width, binding.viewFinder.height)
-        val rotation = getDisplayRotation()
-
-        val resolutionSelector = ResolutionSelector.Builder()
-            .setAspectRatioStrategy(
-                AspectRatioStrategy(screenAspectRatio, AspectRatioStrategy.FALLBACK_RULE_AUTO)
-            )
-            .build()
-
-        val preview = Preview.Builder()
-            .setResolutionSelector(resolutionSelector)
-            .setTargetRotation(rotation)
-            .build()
-            .also {
-                it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
-            }
-
-        imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-            .setResolutionSelector(resolutionSelector)
-            .setTargetRotation(rotation)
-            .build()
-
-        cameraSelector = CameraSelector.Builder()
-            .requireLensFacing(lensFacing)
-            .build()
-
-        try {
-            cameraProvider.unbindAll()
-            camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
-        } catch (e:Exception){
-            e.printStackTrace()
-        }
-    }
-
+    // kiểm tra quyền trong list listPermissionNeeded có được đồng ý hay không
     private fun checkMultiplePermission(): Boolean {
         val listPermissionNeeded = arrayListOf<String>()
         for (permission in multiplePermissionNameList) {
@@ -307,6 +347,23 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+
+    // xử lí khi người dùng ấn back
+    override fun onBackPressed() {
+        if (isBackClicked) {
+            super.onBackPressed()
+            return
+        } // thoát ứng dụng
+
+        isBackClicked = true
+        StyleableToast.makeText(this@CameraActivity, "Nhấn back lần nữa để thoát", R.style.warning_toast).show()
+
+        // Đặt lại biến isBackClicked về false sau 3 giây
+        Handler(Looper.getMainLooper()).postDelayed({
+            isBackClicked = false
+        }, 3000)
+    }
+
     private fun initUI() {
         enableEdgeToEdge()
         binding = ActivityCameraBinding.inflate(layoutInflater)
@@ -317,4 +374,20 @@ class CameraActivity : AppCompatActivity() {
             insets
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraProvider.unbindAll()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        orientationEventListener?.enable()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        orientationEventListener?.disable()
+    }
+
 }
