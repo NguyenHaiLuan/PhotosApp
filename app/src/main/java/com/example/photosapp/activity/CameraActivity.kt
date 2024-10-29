@@ -23,12 +23,15 @@ import android.os.Looper
 import android.print.PrintAttributes.Resolution
 import android.provider.MediaStore
 import android.util.Log
+import android.view.MotionEvent
 import android.view.OrientationEventListener
+import android.view.ScaleGestureDetector
 import android.view.Surface
 import android.view.WindowManager
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCapture.OnImageCapturedCallback
 import androidx.camera.core.ImageCapture.OutputFileOptions
@@ -46,6 +49,7 @@ import io.github.muddz.styleabletoast.StyleableToast
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 class CameraActivity : AppCompatActivity() {
@@ -140,6 +144,7 @@ class CameraActivity : AppCompatActivity() {
         try {
             cameraProvider.unbindAll()
             camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+            setUpZoom()
         } catch (e:Exception){
             e.printStackTrace()
         }
@@ -203,6 +208,44 @@ class CameraActivity : AppCompatActivity() {
             }
         })
     }
+
+    private fun setUpZoom() {
+        // Initialize ScaleGestureDetector for zoom handling
+        val listener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                val currentZoomRatio = camera.cameraInfo.zoomState.value?.zoomRatio ?: 1f
+                val delta = detector.scaleFactor
+                val newZoomRatio = currentZoomRatio * delta
+                camera.cameraControl.setZoomRatio(newZoomRatio)
+
+                camera.cameraInfo.zoomState.observe(this@CameraActivity) { zoomState ->
+                    val zoomRatio = zoomState.zoomRatio
+                    binding.txtZoomRatio.text = "${"%.1f".format(zoomRatio)}x"
+                }
+                return true
+            }
+        }
+
+        val scaleGestureDetector = ScaleGestureDetector(this, listener)
+
+        binding.viewFinder.setOnTouchListener { view, event ->
+            scaleGestureDetector.onTouchEvent(event)
+
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                val factory = binding.viewFinder.meteringPointFactory
+                val point = factory.createPoint(event.x, event.y)
+                val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
+                    .setAutoCancelDuration(2, TimeUnit.SECONDS)
+                    .build()
+
+                camera.cameraControl.startFocusAndMetering(action)
+                view.performClick()
+            }
+            true
+        }
+    }
+
+
 
     private fun btnChangeAspectRatio_EventClickListener() {
         binding.txtRatioAspect.setOnClickListener {

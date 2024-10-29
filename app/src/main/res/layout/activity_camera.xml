@@ -64,6 +64,19 @@
         app:layout_constraintBottom_toTopOf="@+id/btn_take_photo"
         android:layout_marginBottom="15dp"/>
 
+    <TextView
+        android:id="@+id/txtZoomRatio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="-- 1x --"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/txt_ratioAspect"
+        android:layout_marginBottom="5dp"/>
+
+
     <ImageView
         android:id="@+id/imgView_recent_image"
         android:layout_width="40dp"
