@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".activity.DetailMediaActivity"
+    android:background="@color/white">
+
+    <TextView
+        android:id="@+id/mediaName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:fontFamily="@font/exo2_bold"
+        android:gravity="center"
+        android:maxLines="1"
+        android:padding="10dp"
+        android:layout_marginLeft="60dp"
+        android:layout_marginRight="60dp"
+        android:text="Tên media"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintRight_toRightOf="@id/btnBack"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:background="@drawable/tran_btn_no_solid"
+        android:src="@drawable/baseline_arrow_back_24"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"/>
+
+    <ImageView
+        android:id="@+id/photoView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@+id/mediaName"
+        app:layout_constraintBottom_toTopOf="@id/viewButton"
+        android:visibility="gone"/>
+
+    <VideoView
+        android:id="@+id/videoView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@+id/btnBack"
+        app:layout_constraintBottom_toTopOf="@+id/viewButton"
+        android:visibility="gone"/>
+
+    <View
+        android:id="@+id/viewButton"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <ImageButton
+        android:id="@+id/btnCrop"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/tran_btn_no_solid"
+        app:layout_constraintTop_toTopOf="@id/viewButton"
+        app:layout_constraintBottom_toBottomOf="@id/viewButton"
+        app:layout_constraintLeft_toLeftOf="@id/viewButton"
+        android:src="@drawable/baseline_crop_24"
+        app:layout_constraintRight_toLeftOf="@id/btnColorFilter"
+        app:layout_constraintHorizontal_chainStyle="spread"/>
+
+    <ImageButton
+        android:id="@+id/btnColorFilter"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/tran_btn_no_solid"
+        app:layout_constraintTop_toTopOf="@id/viewButton"
+        app:layout_constraintBottom_toBottomOf="@id/viewButton"
+        app:layout_constraintLeft_toRightOf="@id/btnCrop"
+        android:src="@drawable/baseline_invert_colors_24"
+        app:layout_constraintRight_toLeftOf="@+id/btnDelete"/>
+
+    <ImageButton
+        android:id="@+id/btnDelete"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/tran_btn_no_solid"
+        app:layout_constraintTop_toTopOf="@id/viewButton"
+        app:layout_constraintBottom_toBottomOf="@id/viewButton"
+        app:layout_constraintLeft_toRightOf="@id/btnColorFilter"
+        app:layout_constraintRight_toLeftOf="@+id/btnShare"
+        android:src="@drawable/baseline_delete_24"/>
+
+    <ImageButton
+        android:id="@+id/btnShare"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/tran_btn_no_solid"
+        app:layout_constraintTop_toTopOf="@id/viewButton"
+        app:layout_constraintBottom_toBottomOf="@id/viewButton"
+        app:layout_constraintLeft_toRightOf="@id/btnDelete"
+        android:src="@drawable/baseline_share_24"
+        app:layout_constraintRight_toRightOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

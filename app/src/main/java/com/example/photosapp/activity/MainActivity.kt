@@ -1,6 +1,7 @@
 package com.example.photosapp.activity
 
 import android.content.ContentUris
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -21,7 +22,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         initUI()
 
-        setUpRecyclerView() // Set up recycler View để load all hình ảnh
+        //set up recycler view
+        setUpRecyclerView()
 
         binding.btnBack.setOnClickListener {
             finish()
@@ -30,7 +32,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun setUpRecyclerView() {
         val photoList = loadAllMedia()
-        adapter = MediaAdapter(this, photoList)
+        adapter = MediaAdapter(this, photoList) {mediaItem ->
+            val intent = Intent(this, DetailMediaActivity::class.java)
+            intent.putExtra("uri", mediaItem.uri.toString())
+            intent.putExtra("nameMedia", mediaItem.name)
+            intent.putExtra("isVideo", mediaItem.isVideo)
+            startActivity(intent)
+        }
         binding.listImageRecyclerView.adapter = adapter
         binding.listImageRecyclerView.layoutManager = GridLayoutManager(this, 4)
     }
@@ -55,8 +63,9 @@ class MainActivity : AppCompatActivity() {
                     while (cursor.moveToNext()) {
                         val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
                         val displayName = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME))
+                        val dateAdded = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED))
                         val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
-                        tempList.add(com.example.photosapp.model.Media(id, displayName, uri, isVideo = false)) // Xác định đây là ảnh
+                        tempList.add(com.example.photosapp.model.Media(id, displayName, uri, isVideo = false, dateAdded = dateAdded))
                     }
                 }
             }
@@ -70,7 +79,8 @@ class MainActivity : AppCompatActivity() {
         val videoProjection = arrayOf(
             MediaStore.Video.Media._ID,
             MediaStore.Video.Media.DISPLAY_NAME,
-            MediaStore.Video.Media.DATE_ADDED
+            MediaStore.Video.Media.DATE_ADDED, // thời gian được add
+            MediaStore.Video.Media.DURATION // thời gian của video
         )
         contentResolver.query(videoUri, videoProjection, null, null, "${MediaStore.Video.Media.DATE_ADDED} DESC")
             .use { cursor ->
@@ -78,16 +88,16 @@ class MainActivity : AppCompatActivity() {
                     while (cursor.moveToNext()) {
                         val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID))
                         val displayName = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME))
+                        val dateAdded = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED))
+                        val duration = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION))
                         val uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
-                        tempList.add(com.example.photosapp.model.Media(id, displayName, uri, isVideo = true)) // đánh dấu đây là video
+                        tempList.add(com.example.photosapp.model.Media(id, displayName, uri, isVideo = true, dateAdded = dateAdded, duration = duration))
                     }
                 }
             }
 
-        return tempList
+        return tempList.sortedByDescending { it.dateAdded }
     }
-
-
 
     private fun initUI(){
         enableEdgeToEdge()
