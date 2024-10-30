@@ -2,21 +2,23 @@ package com.example.photosapp.adapter
 
 import android.content.Context
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.bumptech.glide.Glide
 import com.example.photosapp.R
 import com.example.photosapp.databinding.ItemPhotoBinding
-import com.example.photosapp.model.Photo
+import com.example.photosapp.model.Media
 
-class PhotoAdapter (
+class MediaAdapter (
     val context: Context,
-    val photoList: List<Photo>
-) : RecyclerView.Adapter<PhotoAdapter.MyViewHolder>() {
+    val mediaList: List<Media>
+) : RecyclerView.Adapter<MediaAdapter.MyViewHolder>() {
 
     class MyViewHolder (val binding: ItemPhotoBinding): ViewHolder(binding.root){
-        val img = binding.imgPhoto
+        val media = binding.media
+        val videoLabel = binding.videoLabel
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -25,16 +27,22 @@ class PhotoAdapter (
     }
 
     override fun getItemCount(): Int {
-        return photoList.size
+        return mediaList.size
     }
 
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-        val photo = photoList[position]
+        val photo = mediaList[position]
 
         Glide.with(context)
             .load(photo.uri)
             .placeholder(R.drawable.img_place_holder)
-            .into(holder.img)
+            .into(holder.media)
 
+        // Kiểm tra nếu là video thì hiển thị biểu tượng video
+        if (photo.isVideo) {
+            holder.videoLabel.visibility = View.VISIBLE
+        } else {
+            holder.videoLabel.visibility = View.GONE
+        }
     }
 }
