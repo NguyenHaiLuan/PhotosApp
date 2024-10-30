@@ -17,6 +17,7 @@ import android.view.MotionEvent
 import android.view.OrientationEventListener
 import android.view.ScaleGestureDetector
 import android.view.Surface
+import android.view.View
 import android.view.WindowManager
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +32,14 @@ import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.FallbackStrategy
+import androidx.camera.video.MediaStoreOutputOptions
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
+import androidx.camera.video.VideoRecordEvent
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -39,6 +48,8 @@ import androidx.core.view.WindowInsetsCompat
 import com.example.photosapp.R
 import com.example.photosapp.databinding.ActivityCameraBinding
 import com.example.photosapp.utils.appSettingOpen
+import com.example.photosapp.utils.invisible
+import com.example.photosapp.utils.visible
 import com.example.photosapp.utils.warningPermissionDialog
 import io.github.muddz.styleabletoast.StyleableToast
 import java.io.File
@@ -58,19 +69,30 @@ class CameraActivity : AppCompatActivity() {
     private var aspectRatio = AspectRatio.RATIO_16_9
     private var orientationEventListener: OrientationEventListener? = null
 
+    private lateinit var videoCapture: VideoCapture<Recorder>
+    private var recording: Recording? = null
+
+    private var isPhoto = true
+
     private var isBackClicked = false
+
+    private var timerHandler: Handler? = null
+    private var timerRunnable: Runnable? = null
+    private var recordingStartTime: Long = 0L
 
     //List các quyền cần cấp
     private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= 33) {
         arrayListOf(
             Manifest.permission.CAMERA,
-            Manifest.permission.READ_EXTERNAL_STORAGE
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.RECORD_AUDIO
         )
     } else {
         arrayListOf(
             Manifest.permission.CAMERA,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_EXTERNAL_STORAGE
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.RECORD_AUDIO
         )
     }
 
@@ -84,11 +106,17 @@ class CameraActivity : AppCompatActivity() {
             startCamera()
         }
 
-        //lắng nghe sự kiện các nút
-        btnCapture_EventClickListener()  //sự kiện nút chụp ảnh
-        btnFlip_EventClickListener()  //sự kiện nút đổi camera
-        btnFlash_EventClickListener()  //sự kiện nút flash
-        btnChangeAspectRatio_EventClickListener()  //sự kiện nút thay đổi tỉ lệ khung hình
+        //---------------lắng nghe sự kiện các nút-----------
+        //sự kiện nút chụp ảnh
+        btnCapture_EventClickListener()
+        //sự kiện nút đổi camera
+        btnFlip_EventClickListener()
+        //sự kiện nút flash
+        btnFlash_EventClickListener()
+        //sự kiện nút thay đổi tỉ lệ khung hình
+        btnChangeAspectRatio_EventClickListener()
+        //sự kiện nút thay đổi camera mode
+        btnChangeCameraMode_EventClickListener()
 
         //sự kiện khi nhấn vào ảnh gần đây
         binding.imgViewRecentImage.setOnClickListener {
@@ -117,6 +145,20 @@ class CameraActivity : AppCompatActivity() {
                 it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
             }
 
+        val recorder = Recorder.Builder()
+            .setQualitySelector(
+                QualitySelector.from(
+                    Quality.HIGHEST,
+                    FallbackStrategy.higherQualityOrLowerThan(Quality.SD)
+                )
+            )
+            .setAspectRatio(aspectRatio)
+            .build()
+
+        videoCapture = VideoCapture.withOutput(recorder).apply {
+
+        }
+
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
             .setResolutionSelector(resolutionSelector)
@@ -131,19 +173,28 @@ class CameraActivity : AppCompatActivity() {
             override fun onOrientationChanged(orientation: Int) {
                 // giám sát sự thay đổi của định hướng thiết bị và cập nhật targetRotation của imageCapture
                 // để đảm bảo ảnh chụp có định hướng phù hợp.
-                imageCapture.targetRotation = when (orientation) {
+                val myRotation = when (orientation) {
                     in 45..134 -> Surface.ROTATION_270
                     in 135..224 -> Surface.ROTATION_180
                     in 225..314 -> Surface.ROTATION_90
                     else -> Surface.ROTATION_0
                 }
+
+                imageCapture.targetRotation = myRotation
+                videoCapture.targetRotation = myRotation
             }
         }
         orientationEventListener?.enable()
 
         try {
             cameraProvider.unbindAll()
-            camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
+            camera = cameraProvider.bindToLifecycle(
+                this,
+                cameraSelector,
+                preview,
+                imageCapture,
+                videoCapture
+            )
             setUpZoom()
             setupZoomButtons()
         } catch (e: Exception) {
@@ -229,6 +280,108 @@ class CameraActivity : AppCompatActivity() {
             })
     }
 
+    private fun captureVideo() {
+        binding.btnTakePhoto.isEnabled = false
+
+        binding.btnFlash.invisible()
+        binding.btnFlipCamera.invisible()
+        binding.btnChangeModeOfCamera.invisible()
+        binding.txtRatioAspect.invisible()
+        binding.imgViewRecentImage.invisible()
+
+        val currentRecording = recording
+        if (currentRecording != null) {
+            currentRecording.stop()
+            recording = null
+            return
+        }
+
+        // tên file: IMG_2024-06-09_6-9-69.jpg
+        val fileName = "VID_" + SimpleDateFormat(
+            "yyyy-MM-dd_HH-mm-ss-SSS",
+            Locale.getDefault()
+        ).format(System.currentTimeMillis()) + ".mp4"
+
+        val contentValue = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+            put(MediaStore.Images.Media.MIME_TYPE, "video/mp4")
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Video")
+            }
+        }
+
+        val mediaStoreOutputOptions = MediaStoreOutputOptions
+            .Builder(contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+            .setContentValues(contentValue)
+            .build()
+
+        recording = videoCapture.output
+            .prepareRecording(this, mediaStoreOutputOptions)
+            .apply {
+                if (ActivityCompat.checkSelfPermission(
+                        this@CameraActivity,
+                        Manifest.permission.RECORD_AUDIO
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    withAudioEnabled()
+                }
+            }
+            .start(ContextCompat.getMainExecutor(this)) { recordEvent ->
+                when (recordEvent) {
+                    is VideoRecordEvent.Start -> {
+                        binding.btnTakePhoto.setImageResource(R.drawable.baseline_stop_circle_24)
+                        binding.btnTakePhoto.isEnabled = true
+
+                        recordingStartTime = System.currentTimeMillis() // Lưu thời gian bắt đầu
+                        startRecordingTimer() // Bắt đầu bộ đếm thời gian
+                    }
+
+                    is VideoRecordEvent.Finalize -> {
+                        if (!recordEvent.hasError()) {
+                            val message =
+                                "Video đã được lưu vào thư viện! Đường dẫn: ${recordEvent.outputResults.outputUri}"
+                            StyleableToast.makeText(this, message, R.style.success_toast).show()
+                        } else {
+                            recording?.close()
+                            recording = null
+                        }
+                        stopRecordingTimer()
+
+                        binding.btnTakePhoto.setImageResource(R.drawable.baseline_fiber_manual_record_24)
+                        binding.btnTakePhoto.isEnabled = true
+
+                        binding.btnFlash.visible()
+                        binding.btnFlipCamera.visible()
+                        binding.btnChangeModeOfCamera.visible()
+                        binding.txtRatioAspect.visible()
+                        binding.imgViewRecentImage.visible()
+                    }
+                }
+            }
+    }
+
+    private fun startRecordingTimer() {
+        binding.txtTimeRecording.visible()
+        timerHandler = Handler(Looper.getMainLooper())
+        timerRunnable = object : Runnable {
+            override fun run() {
+                val elapsedMillis = System.currentTimeMillis() - recordingStartTime
+                val seconds = (elapsedMillis / 1000) % 60
+                val minutes = (elapsedMillis / (1000 * 60)) % 60
+                binding.txtTimeRecording.text = String.format("%02d:%02d", minutes, seconds)
+                timerHandler?.postDelayed(this, 1000) // Cập nhật mỗi giây
+            }
+        }
+        timerHandler?.post(timerRunnable!!)
+    }
+
+    // Hàm để dừng bộ đếm thời gian
+    private fun stopRecordingTimer() {
+        timerHandler?.removeCallbacks(timerRunnable!!)
+        binding.txtTimeRecording.invisible()
+    }
+
+
     private fun setUpZoom() {
         // Initialize ScaleGestureDetector for zoom handling
         val listener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -297,7 +450,6 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-
     private fun btnChangeAspectRatio_EventClickListener() {
         binding.txtRatioAspect.setOnClickListener {
             if (aspectRatio == AspectRatio.RATIO_16_9) {
@@ -340,7 +492,7 @@ class CameraActivity : AppCompatActivity() {
                 "Flash không khả dụng ở camera trước!",
                 R.style.error_toast
             ).show()
-        } else{// Nếu không có flash
+        } else {// Nếu không có flash
             StyleableToast.makeText(
                 this@CameraActivity,
                 "Flash không khả dụng trên thiết bị này!",
@@ -465,7 +617,29 @@ class CameraActivity : AppCompatActivity() {
 
     private fun btnCapture_EventClickListener() {
         binding.btnTakePhoto.setOnClickListener {
-            takePhoto()
+
+            if (isPhoto) {
+                takePhoto()
+            } else {
+                captureVideo()
+            }
+
+        }
+    }
+
+    private fun btnChangeCameraMode_EventClickListener() {
+        binding.btnChangeModeOfCamera.setOnClickListener {
+            isPhoto = !isPhoto
+
+            if (isPhoto) {
+                binding.btnChangeModeOfCamera.setImageResource(R.drawable.baseline_videocam_24)
+                binding.btnTakePhoto.setImageResource(R.drawable.baseline_camera_24)
+                binding.txtTimeRecording.visibility = View.GONE
+            } else {
+                binding.btnChangeModeOfCamera.setImageResource(R.drawable.baseline_camera_24)
+                binding.btnTakePhoto.setImageResource(R.drawable.baseline_fiber_manual_record_24)
+                binding.txtTimeRecording.visibility = View.VISIBLE
+            }
         }
     }
 

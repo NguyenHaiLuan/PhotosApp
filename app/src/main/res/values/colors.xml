@@ -3,4 +3,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="xanhnhat">#67BF7F</color>
+    <color name="sliver">#C0C0C0</color>
+    <color name="dark_red">#BB0000</color>
 </resources>
