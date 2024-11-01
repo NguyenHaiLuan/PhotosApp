@@ -80,19 +80,18 @@ class CameraActivity : AppCompatActivity() {
     private var timerRunnable: Runnable? = null
     private var recordingStartTime: Long = 0L
 
+
     //List các quyền cần cấp
     private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= 33) {
         arrayListOf(
             Manifest.permission.CAMERA,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
         )
     } else {
         arrayListOf(
             Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.RECORD_AUDIO
         )
     }
 
@@ -128,17 +127,7 @@ class CameraActivity : AppCompatActivity() {
     private fun bindCameraUseCases() {
         val rotation = getDisplayRotation()
 
-        val resolutionSelector = ResolutionSelector.Builder()
-            .setAspectRatioStrategy(
-                AspectRatioStrategy(
-                    aspectRatio,
-                    AspectRatioStrategy.FALLBACK_RULE_AUTO
-                )
-            )
-            .build()
-
         val preview = Preview.Builder()
-            .setResolutionSelector(resolutionSelector)
             .setTargetRotation(rotation)
             .build()
             .also {
@@ -155,31 +144,23 @@ class CameraActivity : AppCompatActivity() {
             .setAspectRatio(aspectRatio)
             .build()
 
-        videoCapture = VideoCapture.withOutput(recorder).apply {
-
-        }
+        videoCapture = VideoCapture.withOutput(recorder)
 
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-            .setResolutionSelector(resolutionSelector)
             .setTargetRotation(rotation)
             .build()
 
-        cameraSelector = CameraSelector.Builder()
-            .requireLensFacing(lensFacing)
-            .build()
+        cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
         orientationEventListener = object : OrientationEventListener(this) {
             override fun onOrientationChanged(orientation: Int) {
-                // giám sát sự thay đổi của định hướng thiết bị và cập nhật targetRotation của imageCapture
-                // để đảm bảo ảnh chụp có định hướng phù hợp.
                 val myRotation = when (orientation) {
                     in 45..134 -> Surface.ROTATION_270
                     in 135..224 -> Surface.ROTATION_180
                     in 225..314 -> Surface.ROTATION_90
                     else -> Surface.ROTATION_0
                 }
-
                 imageCapture.targetRotation = myRotation
                 videoCapture.targetRotation = myRotation
             }
@@ -201,6 +182,75 @@ class CameraActivity : AppCompatActivity() {
             e.printStackTrace()
         }
     }
+
+    private fun captureVideo() {
+        binding.btnTakePhoto.isEnabled = false
+        binding.btnFlash.invisible()
+        binding.btnFlipCamera.invisible()
+        binding.btnChangeModeOfCamera.invisible()
+        binding.txtRatioAspect.invisible()
+        binding.imgViewRecentImage.invisible()
+
+        recording?.let {
+            it.stop()
+            recording = null
+            return
+        }
+
+        val fileName = "VID_" + SimpleDateFormat(
+            "yyyy-MM-dd_HH-mm-ss-SSS",
+            Locale.getDefault()
+        ).format(System.currentTimeMillis()) + ".mp4"
+
+        val contentValue = ContentValues().apply {
+            put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/")
+            }
+        }
+
+        val mediaStoreOutputOptions = MediaStoreOutputOptions
+            .Builder(contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+            .setContentValues(contentValue)
+            .build()
+
+        recording = videoCapture.output
+            .prepareRecording(this, mediaStoreOutputOptions)
+            .apply {
+                if (ActivityCompat.checkSelfPermission(this@CameraActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    withAudioEnabled()
+                }
+            }
+            .start(ContextCompat.getMainExecutor(this)) { recordEvent ->
+                when (recordEvent) {
+                    is VideoRecordEvent.Start -> {
+                        binding.btnTakePhoto.setImageResource(R.drawable.baseline_stop_circle_24)
+                        binding.btnTakePhoto.isEnabled = true
+                        recordingStartTime = System.currentTimeMillis()
+                        startRecordingTimer()
+                    }
+                    is VideoRecordEvent.Finalize -> {
+                        if (!recordEvent.hasError()) {
+                            val message = "Video đã được lưu vào thư viện! Đường dẫn: ${recordEvent.outputResults.outputUri}"
+                            StyleableToast.makeText(this, message, R.style.success_toast).show()
+                        } else {
+                            recording?.close()
+                            recording = null
+                        }
+                        stopRecordingTimer()
+                        binding.btnTakePhoto.setImageResource(R.drawable.baseline_fiber_manual_record_24)
+                        binding.btnTakePhoto.isEnabled = true
+                        binding.btnFlash.visible()
+                        binding.btnFlipCamera.visible()
+                        binding.btnChangeModeOfCamera.visible()
+                        binding.txtRatioAspect.visible()
+                        binding.imgViewRecentImage.visible()
+                    }
+                }
+            }
+    }
+
 
     private fun takePhoto() {
         val imageFolder = File(
@@ -280,85 +330,6 @@ class CameraActivity : AppCompatActivity() {
             })
     }
 
-    private fun captureVideo() {
-        binding.btnTakePhoto.isEnabled = false
-
-        binding.btnFlash.invisible()
-        binding.btnFlipCamera.invisible()
-        binding.btnChangeModeOfCamera.invisible()
-        binding.txtRatioAspect.invisible()
-        binding.imgViewRecentImage.invisible()
-
-        val currentRecording = recording
-        if (currentRecording != null) {
-            currentRecording.stop()
-            recording = null
-            return
-        }
-
-        // tên file: IMG_2024-06-09_6-9-69.jpg
-        val fileName = "VID_" + SimpleDateFormat(
-            "yyyy-MM-dd_HH-mm-ss-SSS",
-            Locale.getDefault()
-        ).format(System.currentTimeMillis()) + ".mp4"
-
-        val contentValue = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-            put(MediaStore.Images.Media.MIME_TYPE, "video/mp4")
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Video")
-            }
-        }
-
-        val mediaStoreOutputOptions = MediaStoreOutputOptions
-            .Builder(contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-            .setContentValues(contentValue)
-            .build()
-
-        recording = videoCapture.output
-            .prepareRecording(this, mediaStoreOutputOptions)
-            .apply {
-                if (ActivityCompat.checkSelfPermission(
-                        this@CameraActivity,
-                        Manifest.permission.RECORD_AUDIO
-                    ) == PackageManager.PERMISSION_GRANTED
-                ) {
-                    withAudioEnabled()
-                }
-            }
-            .start(ContextCompat.getMainExecutor(this)) { recordEvent ->
-                when (recordEvent) {
-                    is VideoRecordEvent.Start -> {
-                        binding.btnTakePhoto.setImageResource(R.drawable.baseline_stop_circle_24)
-                        binding.btnTakePhoto.isEnabled = true
-
-                        recordingStartTime = System.currentTimeMillis() // Lưu thời gian bắt đầu
-                        startRecordingTimer() // Bắt đầu bộ đếm thời gian
-                    }
-
-                    is VideoRecordEvent.Finalize -> {
-                        if (!recordEvent.hasError()) {
-                            val message =
-                                "Video đã được lưu vào thư viện! Đường dẫn: ${recordEvent.outputResults.outputUri}"
-                            StyleableToast.makeText(this, message, R.style.success_toast).show()
-                        } else {
-                            recording?.close()
-                            recording = null
-                        }
-                        stopRecordingTimer()
-
-                        binding.btnTakePhoto.setImageResource(R.drawable.baseline_fiber_manual_record_24)
-                        binding.btnTakePhoto.isEnabled = true
-
-                        binding.btnFlash.visible()
-                        binding.btnFlipCamera.visible()
-                        binding.btnChangeModeOfCamera.visible()
-                        binding.txtRatioAspect.visible()
-                        binding.imgViewRecentImage.visible()
-                    }
-                }
-            }
-    }
 
     private fun startRecordingTimer() {
         binding.txtTimeRecording.visible()
@@ -374,7 +345,6 @@ class CameraActivity : AppCompatActivity() {
         }
         timerHandler?.post(timerRunnable!!)
     }
-
     // Hàm để dừng bộ đếm thời gian
     private fun stopRecordingTimer() {
         timerHandler?.removeCallbacks(timerRunnable!!)
@@ -521,7 +491,7 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    // kiểm tra quyền trong list listPermissionNeeded có được đồng ý hay không
+    // Kiểm tra quyền có trong danh sách multiplePermissionNameList
     private fun checkMultiplePermission(): Boolean {
         val listPermissionNeeded = arrayListOf<String>()
         for (permission in multiplePermissionNameList) {
@@ -533,11 +503,12 @@ class CameraActivity : AppCompatActivity() {
                 listPermissionNeeded.add(permission)
             }
         }
-        if (listPermissionNeeded.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, listPermissionNeeded.toTypedArray(), 609)
-            return false
+        return if (listPermissionNeeded.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, listPermissionNeeded.toTypedArray(), 535)
+            false
+        } else {
+            true
         }
-        return true
     }
 
     override fun onRequestPermissionsResult(
@@ -547,40 +518,36 @@ class CameraActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode == 609) {
+        if (requestCode == 535) {
             if (grantResults.isNotEmpty()) {
-                var isGrant = true
-                for (element in grantResults) {
-                    if (element == PackageManager.PERMISSION_DENIED) {
-                        isGrant = false
-                    }
-                }
-                if (isGrant) {
-                    // nếu đáp ứng tất cả các quyền thì khởi chạy camera
-                    startCamera()
-                } else {
-                    var someDenied = false
-                    for (permission in permissions) {
-                        if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permission)
+                var allGranted = true
+                var permanentlyDenied = false
+
+                for ((index, result) in grantResults.withIndex()) {
+                    if (result == PackageManager.PERMISSION_DENIED) {
+                        allGranted = false
+                        if (!ActivityCompat.shouldShowRequestPermissionRationale(
+                                this,
+                                permissions[index]
+                            )
                         ) {
-                            if (ActivityCompat.checkSelfPermission(
-                                    this,
-                                    permission
-                                ) == PackageManager.PERMISSION_DENIED
-                            ) {
-                                someDenied = true
-                            }
+                            permanentlyDenied = true
                         }
                     }
-                    if (someDenied) {
-                        // mở setting vì có quyền bị từ chối hoặc bị chọn Không bao giờ
+                }
+
+                if (allGranted) {
+                    // Tất cả các quyền đã được cấp, khởi chạy camera
+                    startCamera()
+                } else {
+                    if (permanentlyDenied) {
+                        // Mở cài đặt ứng dụng vì có quyền bị từ chối vĩnh viễn
                         appSettingOpen(this)
                     } else {
-                        // hiển thị cảnh báo cấp quyền
-                        warningPermissionDialog(this) { _: DialogInterface, which: Int ->
-                            when (which) {
-                                DialogInterface.BUTTON_POSITIVE ->
-                                    checkMultiplePermission()
+                        // Hiển thị cảnh báo yêu cầu cấp quyền
+                        warningPermissionDialog(this) { dialog, which ->
+                            if (which == DialogInterface.BUTTON_POSITIVE) {
+                                checkMultiplePermission()
                             }
                         }
                     }

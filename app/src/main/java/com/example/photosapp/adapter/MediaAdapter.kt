@@ -44,6 +44,16 @@ class MediaAdapter (
         if (mediaItem.isVideo) {
             holder.videoLabel.visibility = View.VISIBLE
             holder.timeVideo.visibility = View.VISIBLE
+
+            // Kiểm tra null và định dạng thời gian
+            mediaItem.duration?.let { durationMillis ->
+                val minutes = durationMillis / 60000
+                val seconds = (durationMillis % 60000) / 1000
+                holder.timeVideo.text = String.format("%02d:%02d", minutes, seconds)
+            } ?: run {
+                // Nếu duration là null, hiển thị "00:00" hoặc một giá trị mặc định khác
+                holder.timeVideo.text = "00:00"
+            }
         } else {
             holder.videoLabel.visibility = View.GONE
             holder.timeVideo.visibility = View.GONE
