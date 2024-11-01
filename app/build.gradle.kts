@@ -1,7 +1,9 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    id("kotlin-parcelize")
 }
+
 
 android {
     namespace = "com.example.photosapp"
@@ -56,6 +58,8 @@ dependencies {
     implementation(libs.glide)
     //Styleable Toast
     implementation (libs.styleabletoast)
+    //view pager2
+    implementation (libs.androidx.viewpager2)
 
 
     //camera x

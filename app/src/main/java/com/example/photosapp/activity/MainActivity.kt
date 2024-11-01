@@ -22,7 +22,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         initUI()
 
-        //set up recycler view
         setUpRecyclerView()
 
         binding.btnBack.setOnClickListener {
@@ -32,21 +31,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun setUpRecyclerView() {
         val photoList = loadAllMedia()
-        adapter = MediaAdapter(this, photoList) {mediaItem ->
+        adapter = MediaAdapter(this, photoList) { mediaItem ->
             val intent = Intent(this, DetailMediaActivity::class.java)
-            intent.putExtra("uri", mediaItem.uri.toString())
-            intent.putExtra("nameMedia", mediaItem.name)
-            intent.putExtra("isVideo", mediaItem.isVideo)
+            intent.putParcelableArrayListExtra("mediaList", ArrayList(photoList))
+            intent.putExtra("startPosition", photoList.indexOf(mediaItem)) // Truyền vị trí bắt đầu
             startActivity(intent)
         }
         binding.listImageRecyclerView.adapter = adapter
         binding.listImageRecyclerView.layoutManager = GridLayoutManager(this, 4)
     }
 
+
     private fun loadAllMedia(): List<com.example.photosapp.model.Media> {
         val tempList = mutableListOf<com.example.photosapp.model.Media>()
 
-        // Truy vấn ảnh
+        // Truy vấn ảnh-------------------------------------------------------------------------------------------------------------
         val imageUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         } else {
@@ -57,6 +56,7 @@ class MainActivity : AppCompatActivity() {
             MediaStore.Images.Media.DISPLAY_NAME,
             MediaStore.Images.Media.DATE_ADDED
         )
+
         contentResolver.query(imageUri, imageProjection, null, null, "${MediaStore.Images.Media.DATE_ADDED} DESC")
             .use { cursor ->
                 cursor?.let {
@@ -64,13 +64,13 @@ class MainActivity : AppCompatActivity() {
                         val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
                         val displayName = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME))
                         val dateAdded = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED))
-                        val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
+                        val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id).toString()
                         tempList.add(com.example.photosapp.model.Media(id, displayName, uri, isVideo = false, dateAdded = dateAdded))
                     }
                 }
             }
 
-        // Truy vấn video
+        // Truy vấn video--------------------------------------------------------------------------------------------------------------
         val videoUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
         } else {
@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         val videoProjection = arrayOf(
             MediaStore.Video.Media._ID,
             MediaStore.Video.Media.DISPLAY_NAME,
-            MediaStore.Video.Media.DATE_ADDED, // thời gian được add
+            MediaStore.Video.Media.DATE_ADDED,
             MediaStore.Video.Media.DURATION // thời gian của video
         )
         contentResolver.query(videoUri, videoProjection, null, null, "${MediaStore.Video.Media.DATE_ADDED} DESC")
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
                         val displayName = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DISPLAY_NAME))
                         val dateAdded = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_ADDED))
                         val duration = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION))
-                        val uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
+                        val uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id).toString()
                         tempList.add(com.example.photosapp.model.Media(id, displayName, uri, isVideo = true, dateAdded = dateAdded, duration = duration))
                     }
                 }

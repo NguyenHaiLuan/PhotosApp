@@ -7,81 +7,46 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.photosapp.R
+import com.example.photosapp.adapter.MediaSliderAdapter
 import com.example.photosapp.databinding.ActivityDetailMediaBinding
+import com.example.photosapp.model.Media
 import com.example.photosapp.utils.invisible
 import com.example.photosapp.utils.visible
 
 class DetailMediaActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDetailMediaBinding
+    private lateinit var mediaList: List<Media>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initUI()
 
-        // Nhận dữ liệu từ Intent
-        val uriString = intent.getStringExtra("uri")
-        val nameString = intent.getStringExtra("nameMedia")
-        val isVideo = intent.getBooleanExtra("isVideo", false)
-        val mediaUri = Uri.parse(uriString)
+        // Nhận danh sách media từ intent
+        mediaList = intent.getParcelableArrayListExtra("mediaList") ?: listOf()
 
-        binding.mediaName.text = nameString
+        // Thiết lập ViewPager2 với Adapter
+        val adapter = MediaSliderAdapter(this, mediaList)
+        binding.viewPager.adapter = adapter
 
-        binding.btnBack.setOnClickListener {
-            finish()
-        }
+        // Chuyển tới vị trí media được chọn
+        val startPosition = intent.getIntExtra("startPosition", 0)
+        binding.viewPager.setCurrentItem(startPosition, false)
 
-        if (isVideo) {
-            showVideo(mediaUri)
-        } else {
-            showImage(mediaUri)
-        }
-    }
+        binding.mediaName.text = mediaList[startPosition].name
 
-    private fun showImage(mediaUri: Uri?) {
-        binding.videoView.visibility = View.GONE
-        binding.photoView.visibility = View.VISIBLE
 
-        Glide.with(this)
-            .load(mediaUri)
-            .placeholder(R.drawable.img_place_holder)
-            .into(binding.photoView)
-    }
-
-    private fun showVideo(mediaUri: Uri?) {
-        binding.videoView.visibility = View.VISIBLE
-        binding.photoView.visibility = View.GONE
-
-        // Đặt URI cho video
-        binding.videoView.setVideoURI(mediaUri)
-
-        // Lắng nghe sự kiện khi video đã chuẩn bị xong
-        binding.videoView.setOnPreparedListener { mediaPlayer ->
-            // Lấy kích thước của video
-            val videoWidth = mediaPlayer.videoWidth
-            val videoHeight = mediaPlayer.videoHeight
-            val videoAspectRatio = videoWidth.toFloat() / videoHeight.toFloat()
-
-            // Lấy kích thước của màn hình
-            val layoutParams = binding.videoView.layoutParams
-            val displayMetrics = resources.displayMetrics
-            val screenWidth = displayMetrics.widthPixels
-            val screenHeight = displayMetrics.heightPixels
-
-            // Kiểm tra và điều chỉnh tỷ lệ khung hình cho video
-            if (videoWidth > videoHeight) { // Video nằm ngang
-                layoutParams.width = screenWidth
-                layoutParams.height = (screenWidth / videoAspectRatio).toInt()
-            } else { // Video đứng hoặc vuông
-                layoutParams.height = screenHeight
-                layoutParams.width = (screenHeight * videoAspectRatio).toInt()
+        // lang nghe su thay doi cua view pager
+        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                binding.mediaName.text = mediaList[position].name
             }
-
-            // Áp dụng các thay đổi cho VideoView
-            binding.videoView.layoutParams = layoutParams
-
-            // Bắt đầu phát video
-            mediaPlayer.start()
+        })
+        binding.btnBack.setOnClickListener{
+            finish()
         }
     }
 
