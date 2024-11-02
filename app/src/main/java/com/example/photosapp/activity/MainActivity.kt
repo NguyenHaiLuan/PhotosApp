@@ -1,5 +1,6 @@
 package com.example.photosapp.activity
 
+import android.annotation.SuppressLint
 import android.content.ContentUris
 import android.content.Intent
 import android.os.Build
@@ -110,8 +111,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onResume() {
         super.onResume()
         loadAllMedia()
+        adapter.notifyDataSetChanged()
     }
 }
