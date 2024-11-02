@@ -2,6 +2,7 @@ package com.example.photosapp.activity
 
 import android.app.Activity
 import android.content.ContentValues
+import android.content.Intent
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -32,6 +33,9 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
     private lateinit var mediaList: MutableList<Media> // Đổi thành MutableList
     private lateinit var intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>
 
+
+    // -----------------------------------------CODE-----------------------------------------------
+
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,13 +52,8 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         binding.viewPager.setCurrentItem(startPosition, false)
         binding.mediaName.text = mediaList[startPosition].name
 
-        if (mediaList[startPosition].isVideo) {
-            binding.btnCrop.visibility = View.GONE
-            binding.btnColorFilter.visibility = View.GONE
-        } else {
-            binding.btnCrop.visibility = View.VISIBLE
-            binding.btnColorFilter.visibility = View.VISIBLE
-        }
+        // thiết lập các nút lệnh cho ảnh hoặc video
+        initEditButton(startPosition)
 
         binding.btnBack.setOnClickListener { finish() }
 
@@ -75,6 +74,13 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         binding.btnRename.setOnClickListener {
             val renameDialog = RenameMediaDialog()
             renameDialog.show(supportFragmentManager, "RenameMediaDialog")
+        }
+
+        // Sự kiện cho nút share
+        binding.btnShare.setOnClickListener {
+            val position = binding.viewPager.currentItem
+            val mediaUri = mediaList[position].uri
+            shareMedia(mediaUri)
         }
 
         // Xử lý kết quả sau khi thực hiện IntentSender để xóa
@@ -118,6 +124,26 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
                 }
             }
         })
+    }
+
+    private fun shareMedia(uri: Uri){
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_STREAM, uri)
+            type = contentResolver.getType(uri) // Lấy loại media
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Cấp quyền đọc URI
+        }
+        startActivity(Intent.createChooser(shareIntent, "Chia sẻ qua:"))
+    }
+
+    private fun initEditButton(position:Int) {
+        if (mediaList[position].isVideo) {
+            binding.btnCrop.visibility = View.GONE
+            binding.btnColorFilter.visibility = View.GONE
+        } else {
+            binding.btnCrop.visibility = View.VISIBLE
+            binding.btnColorFilter.visibility = View.VISIBLE
+        }
     }
 
     // xử lý nut Ok khi rename
