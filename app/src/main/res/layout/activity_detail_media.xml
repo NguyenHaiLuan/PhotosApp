@@ -69,7 +69,8 @@
         app:layout_constraintLeft_toLeftOf="@id/viewButton"
         android:src="@drawable/baseline_crop_24"
         app:layout_constraintRight_toLeftOf="@id/btnColorFilter"
-        app:layout_constraintHorizontal_chainStyle="spread"/>
+        app:layout_constraintHorizontal_chainStyle="spread"
+        android:visibility="gone"/>
 
     <ImageButton
         android:id="@+id/btnColorFilter"
@@ -80,7 +81,8 @@
         app:layout_constraintBottom_toBottomOf="@id/viewButton"
         app:layout_constraintLeft_toRightOf="@id/btnCrop"
         android:src="@drawable/baseline_invert_colors_24"
-        app:layout_constraintRight_toLeftOf="@+id/btnDelete"/>
+        app:layout_constraintRight_toLeftOf="@+id/btnDelete"
+        android:visibility="gone"/>
 
     <ImageButton
         android:id="@+id/btnDelete"

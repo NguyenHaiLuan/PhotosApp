@@ -20,6 +20,7 @@ import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
@@ -86,6 +87,7 @@ class CameraActivity : AppCompatActivity() {
         arrayListOf(
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.MANAGE_EXTERNAL_STORAGE,
         )
     } else {
         arrayListOf(

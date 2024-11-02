@@ -7,8 +7,6 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import com.example.photosapp.R
 import com.example.photosapp.databinding.FragmentMediaBinding
 import com.example.photosapp.model.Media
 
@@ -59,15 +57,10 @@ class MediaFragment : Fragment() {
             return
         }
 
-        // Lắng nghe sự kiện khi video đã chuẩn bị xong
+        // Kiểm tra tỷ lệ video khi chuẩn bị xong
         binding.videoView.setOnPreparedListener { mediaPlayer ->
-            // Lấy kích thước của video
             val videoWidth = mediaPlayer.videoWidth
             val videoHeight = mediaPlayer.videoHeight
-
-            // Kiểm tra kích thước video
-            Log.d("MediaFragment", "Video dimensions: $videoWidth x $videoHeight")
-
             val videoAspectRatio = videoWidth.toFloat() / videoHeight.toFloat()
 
             // Lấy kích thước của màn hình
@@ -85,14 +78,13 @@ class MediaFragment : Fragment() {
                 layoutParams.width = (screenHeight * videoAspectRatio).toInt()
             }
 
-            // Áp dụng các thay đổi cho VideoView
             binding.videoView.layoutParams = layoutParams
-            Log.d("MediaFragment", "Video layout parameters set: width = ${layoutParams.width}, height = ${layoutParams.height}")
+            binding.videoView.requestLayout() // Cập nhật layout ngay lập tức
 
-            // Bắt đầu phát video
+            // Phát video sau khi layout đã cập nhật
             mediaPlayer.start()
-            Log.d("MediaFragment", "Video started playing")
         }
+
     }
 
     override fun onDestroyView() {

@@ -2,17 +2,15 @@ package com.example.photosapp.activity
 
 import android.app.Activity
 import android.content.ContentValues
-import android.content.IntentSender
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.View
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.StartIntentSenderForResult
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -40,7 +38,8 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         initUI()
 
         // Nhận data từ intent
-        mediaList = intent.getParcelableArrayListExtra<Media>("mediaList")?.toMutableList() ?: mutableListOf()
+        mediaList = intent.getParcelableArrayListExtra<Media>("mediaList")?.toMutableList()
+            ?: mutableListOf()
         val startPosition = intent.getIntExtra("startPosition", 0)
 
         // Thiết lập ViewPager2 với Adapter
@@ -49,9 +48,15 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         binding.viewPager.setCurrentItem(startPosition, false)
         binding.mediaName.text = mediaList[startPosition].name
 
-        binding.btnBack.setOnClickListener {
-            finish()
+        if (mediaList[startPosition].isVideo) {
+            binding.btnCrop.visibility = View.GONE
+            binding.btnColorFilter.visibility = View.GONE
+        } else {
+            binding.btnCrop.visibility = View.VISIBLE
+            binding.btnColorFilter.visibility = View.VISIBLE
         }
+
+        binding.btnBack.setOnClickListener { finish() }
 
         // Sự kiện cho nút xóa media
         binding.btnDelete.setOnClickListener {
@@ -75,54 +80,69 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         // Xử lý kết quả sau khi thực hiện IntentSender để xóa
         intentSenderLauncher = registerForActivityResult(StartIntentSenderForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                if (startPosition in mediaList.indices) { // Kiểm tra vị trí hợp lệ
-                    // Xóa media khỏi danh sách
-                    mediaList.removeAt(startPosition)
-                    adapter.notifyItemRemoved(startPosition)
+                val currentPos = binding.viewPager.currentItem
+                if (currentPos in mediaList.indices) {
+                    mediaList.removeAt(currentPos)
+                    adapter.notifyItemRemoved(currentPos)
 
-                    if (mediaList.isEmpty()) {
-                        // Nếu không còn media nào, đóng Activity
-                        finish()
-                    } else {
-                        // Cập nhật ViewPager để hiển thị media tiếp theo
-                        binding.viewPager.adapter = adapter
-                        binding.viewPager.setCurrentItem(startPosition.coerceAtMost(mediaList.size - 1), false)
+                    if (mediaList.isEmpty()) finish()
+                    else {
+                        binding.viewPager.setCurrentItem(
+                            currentPos.coerceAtMost(mediaList.size - 1),
+                            false
+                        )
                         binding.mediaName.text = mediaList[binding.viewPager.currentItem].name
                     }
                 } else {
-                    StyleableToast.makeText(this, "Không thể xóa media. Vị trí không hợp lệ.", R.style.error_toast).show()
+                    StyleableToast.makeText(
+                        this,
+                        "Không thể xóa media. Vị trí không hợp lệ.",
+                        R.style.error_toast
+                    ).show()
                 }
                 setResult(Activity.RESULT_OK)
             }
         }
 
+        // lắng nghe thay đổi của viewPager
         binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 super.onPageSelected(position)
-                binding.mediaName.text = mediaList[position].name
+
+                if (mediaList[position].isVideo) {
+                    binding.btnCrop.visibility = View.GONE
+                    binding.btnColorFilter.visibility = View.GONE
+                } else {
+                    binding.btnCrop.visibility = View.VISIBLE
+                    binding.btnColorFilter.visibility = View.VISIBLE
+                }
             }
         })
     }
 
-    // Xác nhận tên mới từ dialog
+    // xử lý nut Ok khi rename
     override fun onRenameConfirmed(newName: String) {
         val position = binding.viewPager.currentItem
         val media = mediaList[position]
 
         try {
-            // Cập nhật tên file trong MediaStore
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, newName)
             }
-            contentResolver.update(media.uri, contentValues, null, null)
-            StyleableToast.makeText(this, "Đổi tên thành công", R.style.success_toast).show()
+            val rowsUpdated = contentResolver.update(media.uri, contentValues, null, null)
 
-            // Cập nhật danh sách và giao diện
-            mediaList[position] = media.copy(name = newName)
-            binding.mediaName.text = newName
+            if (rowsUpdated > 0) {
+                StyleableToast.makeText(this, "Đổi tên thành công", R.style.success_toast).show()
+                mediaList[position] = media.copy(name = newName)
+                binding.mediaName.text = newName
+                MediaScannerConnection.scanFile(this, arrayOf(media.uri.toString()), null, null)
+            } else {
+                StyleableToast.makeText(this, "Không thể đổi tên media", R.style.error_toast).show()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
-            StyleableToast.makeText(this, "Đổi tên thất bại", R.style.error_toast).show()
+            StyleableToast.makeText(this, "Đổi tên thất bại: " + e.message, R.style.error_toast)
+                .show()
         }
     }
 
@@ -133,23 +153,27 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
 
         when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                // API 30 trở lên, yêu cầu xác nhận bằng IntentSender
                 val pendingIntent = MediaStore.createDeleteRequest(resolver, listOf(uri))
-                intentSenderLauncher.launch(IntentSenderRequest.Builder(pendingIntent.intentSender).build())
+                intentSenderLauncher.launch(
+                    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+                )
             }
+
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                // API 29, cũng sử dụng IntentSender để xác nhận
                 val pendingIntent = MediaStore.createDeleteRequest(resolver, listOf(uri))
-                intentSenderLauncher.launch(IntentSenderRequest.Builder(pendingIntent.intentSender).build())
+                intentSenderLauncher.launch(
+                    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+                )
             }
+
             else -> {
-                // API dưới 29, xóa trực tiếp không cần xác nhận
                 try {
                     resolver.delete(uri, null, null)
                     StyleableToast.makeText(this, "Xóa thành công!", R.style.success_toast).show()
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    StyleableToast.makeText(this, "Xóa không thành công!", R.style.error_toast).show()
+                    StyleableToast.makeText(this, "Xóa không thành công!", R.style.error_toast)
+                        .show()
                 }
             }
         }
@@ -166,4 +190,5 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         }
     }
 }
+
 
