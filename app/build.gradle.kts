@@ -61,6 +61,7 @@ dependencies {
     //view pager2
     implementation (libs.androidx.viewpager2)
 
+    implementation ("com.soundcloud.android:android-crop:1.0.1@aar")
 
     //camera x
     dependencies {

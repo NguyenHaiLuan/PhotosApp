@@ -3,12 +3,15 @@ package com.example.photosapp.activity
 import android.app.Activity
 import android.content.ContentValues
 import android.content.Intent
+import android.graphics.Bitmap
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.view.View
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -25,14 +28,15 @@ import com.example.photosapp.databinding.ActivityDetailMediaBinding
 import com.example.photosapp.dialog.DeleteMediaDialog
 import com.example.photosapp.dialog.RenameMediaDialog
 import com.example.photosapp.model.Media
+import com.soundcloud.android.crop.Crop
 import io.github.muddz.styleabletoast.StyleableToast
 import kotlinx.coroutines.launch
+import java.io.File
 
 class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaListener {
     private lateinit var binding: ActivityDetailMediaBinding
     private lateinit var mediaList: MutableList<Media> // Đổi thành MutableList
     private lateinit var intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>
-
 
     // -----------------------------------------CODE-----------------------------------------------
 
@@ -83,6 +87,11 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
             shareMedia(mediaUri)
         }
 
+        //Sự kiện cho nút Crop
+        binding.btnCrop.setOnClickListener {
+            startCrop(mediaList[startPosition].uri)
+        }
+
         // Xử lý kết quả sau khi thực hiện IntentSender để xóa
         intentSenderLauncher = registerForActivityResult(StartIntentSenderForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -115,6 +124,7 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
             override fun onPageSelected(position: Int) {
                 super.onPageSelected(position)
 
+                binding.mediaName.text = mediaList[position].name
                 if (mediaList[position].isVideo) {
                     binding.btnCrop.visibility = View.GONE
                     binding.btnColorFilter.visibility = View.GONE
@@ -124,6 +134,10 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
                 }
             }
         })
+    }
+
+    private fun startCrop(sourceUri: Uri) {
+        Crop.of(sourceUri, Uri.fromFile(File(cacheDir, "cropped_image.jpg"))).asSquare().start(this)
     }
 
     private fun shareMedia(uri: Uri){
@@ -162,6 +176,11 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
                 mediaList[position] = media.copy(name = newName)
                 binding.mediaName.text = newName
                 MediaScannerConnection.scanFile(this, arrayOf(media.uri.toString()), null, null)
+
+                // Trả lại tên mới cho MainActivity
+                val resultIntent = Intent()
+                resultIntent.putExtra("renamedImage", newName)
+                setResult(Activity.RESULT_OK, resultIntent)
             } else {
                 StyleableToast.makeText(this, "Không thể đổi tên media", R.style.error_toast).show()
             }
@@ -169,6 +188,42 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
             e.printStackTrace()
             StyleableToast.makeText(this, "Đổi tên thất bại: " + e.message, R.style.error_toast)
                 .show()
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == Crop.REQUEST_CROP && resultCode == RESULT_OK) {
+            val resultUri = Crop.getOutput(data!!) // Lấy URI của ảnh đã cắt
+            saveCroppedImageToGallery(resultUri)
+        }
+    }
+
+    private fun saveCroppedImageToGallery(uri: Uri) {
+        // Lưu ảnh đã cắt vào thư viện ảnh
+        val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, "cropped_image_${System.currentTimeMillis()}.jpg")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+        }
+
+        val uriResult = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+
+        uriResult?.let {
+            contentResolver.openOutputStream(it).use { outputStream ->
+                if (outputStream != null) {
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                }
+            }
+            StyleableToast.makeText(this, "Ảnh đã cắt được lưu vào thư viện ảnh.", R.style.success_toast).show()
+
+            // Trả lại URI mới cho MainActivity
+            val resultIntent = Intent()
+            resultIntent.putExtra("newImageUri", uriResult.toString())
+            setResult(Activity.RESULT_OK, resultIntent)
+            finish()
         }
     }
 
