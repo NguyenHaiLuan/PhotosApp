@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -29,6 +30,14 @@
         android:layout_marginTop="10dp">
 
         <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="5dp"
+            android:text="Hủy" />
+
+        <Button
             android:id="@+id/btnConfirm"
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -36,13 +45,5 @@
             android:backgroundTint="@color/xanhnhat"
             android:layout_margin="5dp"
             android:text="OK" />
-
-        <Button
-            android:id="@+id/btnCancel"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="5dp"
-            android:text="Hủy" />
     </LinearLayout>
 </LinearLayout>

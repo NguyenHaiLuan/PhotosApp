@@ -115,14 +115,14 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
                 put(MediaStore.MediaColumns.DISPLAY_NAME, newName)
             }
             contentResolver.update(media.uri, contentValues, null, null)
-            Toast.makeText(this, "Đổi tên thành công", Toast.LENGTH_SHORT).show()
+            StyleableToast.makeText(this, "Đổi tên thành công", R.style.success_toast).show()
 
             // Cập nhật danh sách và giao diện
-            mediaList[position] = media.copy(name = newName) // Cập nhật tên
+            mediaList[position] = media.copy(name = newName)
             binding.mediaName.text = newName
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Đổi tên thất bại", Toast.LENGTH_SHORT).show()
+            StyleableToast.makeText(this, "Đổi tên thất bại", R.style.error_toast).show()
         }
     }
 
