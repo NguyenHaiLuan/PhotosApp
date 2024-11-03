@@ -21,7 +21,6 @@ import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
@@ -76,20 +75,21 @@ class CameraActivity : AppCompatActivity() {
     private var timerRunnable: Runnable? = null
     private var recordingStartTime: Long = 0L
     //List các quyền cần cấp
-    @RequiresApi(Build.VERSION_CODES.R)
-    private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        arrayListOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
-        )
-    } else {
-        arrayListOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-        )
-    }
+
+    private val multiplePermissionNameList =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayListOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO
+            )
+        } else {
+            arrayListOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+            )
+        }
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 69
@@ -127,7 +127,7 @@ class CameraActivity : AppCompatActivity() {
         }
 
         //nút thay đổi tỉ lệ khung hình
-        binding.txtRatioAspect.setOnClickListener{
+        binding.txtRatioAspect.setOnClickListener {
             changeAspectRatio()
         }
 
@@ -226,7 +226,11 @@ class CameraActivity : AppCompatActivity() {
         recording = videoCapture.output
             .prepareRecording(this, mediaStoreOutputOptions)
             .apply {
-                if (ActivityCompat.checkSelfPermission(this@CameraActivity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.checkSelfPermission(
+                        this@CameraActivity,
+                        Manifest.permission.RECORD_AUDIO
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
                     withAudioEnabled()
                 }
             }
@@ -238,6 +242,7 @@ class CameraActivity : AppCompatActivity() {
                         recordingStartTime = System.currentTimeMillis()
                         startRecordingTimer()
                     }
+
                     is VideoRecordEvent.Finalize -> {
                         if (!recordEvent.hasError()) {
                             val message = getString(R.string.capture_video_success_message)
@@ -322,7 +327,10 @@ class CameraActivity : AppCompatActivity() {
                         arrayOf(savedUri.path),
                         null
                     ) { path, uri ->
-                        Log.d("CameraActivity", "${getString(R.string.check_uri_string)} $path, Uri: $uri")
+                        Log.d(
+                            "CameraActivity",
+                            "${getString(R.string.check_uri_string)} $path, Uri: $uri"
+                        )
                     }
                     Log.d("image_uri", "${outputFileResults.savedUri}")
                 }
@@ -341,12 +349,20 @@ class CameraActivity : AppCompatActivity() {
     private fun checkMultiplePermission(): Boolean {
         val listPermissionNeeded = arrayListOf<String>()
         for (permission in multiplePermissionNameList) {
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    permission
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
                 listPermissionNeeded.add(permission)
             }
         }
         return if (listPermissionNeeded.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, listPermissionNeeded.toTypedArray(), PERMISSION_REQUEST_CODE)
+            ActivityCompat.requestPermissions(
+                this,
+                listPermissionNeeded.toTypedArray(),
+                PERMISSION_REQUEST_CODE
+            )
             false
         } else {
             true
@@ -368,7 +384,11 @@ class CameraActivity : AppCompatActivity() {
                 for ((index, result) in grantResults.withIndex()) {
                     if (result == PackageManager.PERMISSION_DENIED) {
                         allGranted = false
-                        if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[index])) {
+                        if (!ActivityCompat.shouldShowRequestPermissionRationale(
+                                this,
+                                permissions[index]
+                            )
+                        ) {
                             permanentlyDenied = true
                         }
                     }
@@ -488,17 +508,17 @@ class CameraActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun changeAspectRatio() {
-            if (aspectRatio == AspectRatio.RATIO_16_9) {
-                aspectRatio = AspectRatio.RATIO_4_3
-                setAspectRatio("H,4:3")
-                binding.txtRatioAspect.text = "4:3"
-            } else {
-                aspectRatio = AspectRatio.RATIO_16_9
-                setAspectRatio("H,0:0")
-                binding.txtRatioAspect.text = "16:9"
-            }
-            // Thiết lập lại camera sau khi xử lí xong
-            bindCameraUseCases()
+        if (aspectRatio == AspectRatio.RATIO_16_9) {
+            aspectRatio = AspectRatio.RATIO_4_3
+            setAspectRatio("H,4:3")
+            binding.txtRatioAspect.text = "4:3"
+        } else {
+            aspectRatio = AspectRatio.RATIO_16_9
+            setAspectRatio("H,0:0")
+            binding.txtRatioAspect.text = "16:9"
+        }
+        // Thiết lập lại camera sau khi xử lí xong
+        bindCameraUseCases()
     }
 
     private fun setAspectRatio(ratio: String) {
@@ -556,7 +576,7 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private fun turnFlash(){
+    private fun turnFlash() {
         binding.btnFlash.isEnabled = false
         setIconFlash(camera)
         Handler(Looper.getMainLooper()).postDelayed({

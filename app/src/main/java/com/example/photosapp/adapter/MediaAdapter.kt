@@ -13,7 +13,7 @@ import com.example.photosapp.model.Media
 
 class MediaAdapter (
     val context: Context,
-    val mediaList: List<Media>,
+    var mediaList: List<Media>,
     private val onMediaClick: (Media) -> Unit
 ) : RecyclerView.Adapter<MediaAdapter.MyViewHolder>() {
 
