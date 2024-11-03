@@ -8,7 +8,7 @@
     <style name="Theme.PhotosApp" parent="Base.Theme.PhotosApp" />
 
     <style name="circular">
-        <item name="cornerSize">30%</item>
+        <item name="cornerSize">12dp</item>
     </style>
 
     <style name="circle">

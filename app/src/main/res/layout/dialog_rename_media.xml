@@ -16,7 +16,7 @@
         android:drawableStart="@drawable/baseline_edit_24"
         android:textColorHint="#504F4F"
         android:drawablePadding="8dp"
-        android:hint="Tên mới"
+        android:hint="@string/input_name_request"
         android:padding="8dp"
         android:layout_margin="2dp"
         android:textSize="16sp"
@@ -35,7 +35,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_margin="5dp"
-            android:text="Hủy" />
+            android:text="@string/cancel_button_label" />
 
         <Button
             android:id="@+id/btnConfirm"
@@ -44,6 +44,6 @@
             android:layout_weight="1"
             android:backgroundTint="@color/xanhnhat"
             android:layout_margin="5dp"
-            android:text="OK" />
+            android:text="@string/ok_button_label" />
     </LinearLayout>
 </LinearLayout>

@@ -12,7 +12,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.github.muddz.styleabletoast.StyleableToast
 
     fun appSettingOpen(context: Context){
-        StyleableToast.makeText(context, "Vui lòng cung cấp tất cả các quyền cho ứng dụng ở phần cài đặt", R.style.warning_toast).show()
+        StyleableToast.makeText(context, context.getString(R.string.require_permission_message), R.style.warning_toast).show()
 
         val settingIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
         settingIntent.data = Uri.parse("package:${context.packageName}")
@@ -21,9 +21,9 @@ import io.github.muddz.styleabletoast.StyleableToast
 
     fun warningPermissionDialog(context: Context,listener : DialogInterface.OnClickListener){
         MaterialAlertDialogBuilder(context)
-            .setMessage("Ứng dụng cần các quyền cần thiết để hoạt động! Vui lòng cung cấp đầy đủ tất cả các quyền!")
+            .setMessage(context.getString(R.string.require_all_permission_message))
             .setCancelable(false)
-            .setPositiveButton("Ok",listener)
+            .setPositiveButton(context.getString(R.string.ok_button_label),listener)
             .create()
             .show()
     }

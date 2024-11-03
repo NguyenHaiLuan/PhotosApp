@@ -15,4 +15,15 @@
     <string name="crop_image_success_message">Ảnh đã cắt được lưu vào thư viện ảnh</string>
     <string name="delete_success_message">Xóa thành công!</string>
     <string name="delete_fail_success">Xóa không thành công!</string>
+    <string name="default_time">00:00</string>
+    <string name="title_gallery">Ảnh</string>
+    <string name="input_name_request">Nhập tên mới</string>
+    <string name="cancel_button_label">Hủy</string>
+    <string name="ok_button_label">OK</string>
+    <string name="default_aspect_ratio_string">16:9</string>
+    <string name="default_zoom_ratio_string">-- 1x --</string>
+    <string name="name_of_filter">Bộ lọc A</string>
+    <string name="save_image_fail_message">Lưu ảnh thất bại!</string>
+    <string name="require_permission_message">Vui lòng cung cấp tất cả các quyền cho ứng dụng ở phần cài đặt</string>
+    <string name="require_all_permission_message">Ứng dụng cần các quyền cần thiết để hoạt động! Vui lòng cung cấp đầy đủ tất cả các quyền!</string>
 </resources>

@@ -21,6 +21,7 @@ import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
@@ -75,6 +76,7 @@ class CameraActivity : AppCompatActivity() {
     private var timerRunnable: Runnable? = null
     private var recordingStartTime: Long = 0L
     //List các quyền cần cấp
+    @RequiresApi(Build.VERSION_CODES.R)
     private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayListOf(
             Manifest.permission.CAMERA,
@@ -85,6 +87,7 @@ class CameraActivity : AppCompatActivity() {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
         )
     }
 
@@ -479,7 +482,7 @@ class CameraActivity : AppCompatActivity() {
     private fun updateZoomRatioText() {
         camera.cameraInfo.zoomState.observe(this) { zoomState ->
             val zoomRatio = zoomState.zoomRatio
-            binding.txtZoomRatio.text = "${"%.1f".format(zoomRatio)}x"
+            binding.txtZoomRatio.text = "-- ${"%.1f".format(zoomRatio)}x --"
         }
     }
 

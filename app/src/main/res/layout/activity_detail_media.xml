@@ -34,7 +34,7 @@
         android:padding="10dp"
         android:layout_marginLeft="60dp"
         android:layout_marginRight="60dp"
-        android:text="Tên media"
+        android:text="@string/title_gallery"
         android:textColor="@color/black"
         android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"

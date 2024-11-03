@@ -95,6 +95,13 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
             startCrop(mediaList[startPosition].uri)
         }
 
+        //Sự kiện cho nút ColorFilter
+        binding.btnColorFilter.setOnClickListener {
+            val intent = Intent(this@DetailMediaActivity, ColorFilterImageActivity::class.java)
+            intent.putExtra("mediaNeed", mediaList[startPosition])
+            startActivity(intent)
+        }
+
         // Xử lý kết quả sau khi thực hiện IntentSender để xóa
         intentSenderLauncher = registerForActivityResult(StartIntentSenderForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
