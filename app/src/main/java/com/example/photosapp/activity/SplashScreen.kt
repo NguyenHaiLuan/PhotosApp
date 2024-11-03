@@ -1,5 +1,6 @@
 package com.example.photosapp.activity
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
@@ -9,8 +10,13 @@ import androidx.core.view.WindowInsetsCompat
 import com.example.photosapp.R
 import com.example.photosapp.databinding.ActivitySplashScreenBinding
 
+@SuppressLint("CustomSplashScreen")
 class SplashScreen : AppCompatActivity() {
     private lateinit var binding: ActivitySplashScreenBinding
+    companion object{
+        const val DELAY_MILLIS = 2000L
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initUI()
@@ -20,7 +26,7 @@ class SplashScreen : AppCompatActivity() {
             val intent = Intent(this@SplashScreen, CameraActivity::class.java)
             startActivity(intent)
             finish()
-        }, 2000)
+        }, DELAY_MILLIS)
     }
 
     private fun initUI(){

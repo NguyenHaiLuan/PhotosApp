@@ -1,6 +1,7 @@
 package com.example.photosapp.activity
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.DialogInterface
 import android.content.Intent
@@ -20,7 +21,6 @@ import android.view.Surface
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
@@ -30,8 +30,6 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCapture.OutputFileOptions
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
-import androidx.camera.core.resolutionselector.AspectRatioStrategy
-import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.FallbackStrategy
 import androidx.camera.video.MediaStoreOutputOptions
@@ -69,25 +67,18 @@ class CameraActivity : AppCompatActivity() {
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var aspectRatio = AspectRatio.RATIO_16_9
     private var orientationEventListener: OrientationEventListener? = null
-
     private lateinit var videoCapture: VideoCapture<Recorder>
     private var recording: Recording? = null
-
     private var isPhoto = true
-
     private var isBackClicked = false
-
     private var timerHandler: Handler? = null
     private var timerRunnable: Runnable? = null
     private var recordingStartTime: Long = 0L
-
-
     //List các quyền cần cấp
-    private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= 33) {
+    private val multiplePermissionNameList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayListOf(
             Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+            Manifest.permission.RECORD_AUDIO
         )
     } else {
         arrayListOf(
@@ -95,6 +86,12 @@ class CameraActivity : AppCompatActivity() {
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
         )
+    }
+
+    companion object {
+        private const val PERMISSION_REQUEST_CODE = 69
+        const val RATIO_ZOOM = 0.5f
+        const val MIN_RATIO_ZOOM = 1f
     }
 
     // ---------------------------------CODE------------------------------------
@@ -108,16 +105,33 @@ class CameraActivity : AppCompatActivity() {
         }
 
         //---------------lắng nghe sự kiện các nút-----------
-        //sự kiện nút chụp ảnh
-        btnCapture_EventClickListener()
-        //sự kiện nút đổi camera
-        btnFlip_EventClickListener()
-        //sự kiện nút flash
-        btnFlash_EventClickListener()
-        //sự kiện nút thay đổi tỉ lệ khung hình
-        btnChangeAspectRatio_EventClickListener()
-        //sự kiện nút thay đổi camera mode
-        btnChangeCameraMode_EventClickListener()
+        //nút chụp ảnh
+        binding.btnTakePhoto.setOnClickListener {
+            if (isPhoto) {
+                takePhoto()
+            } else {
+                captureVideo()
+            }
+        }
+
+        //nút đổi camera
+        binding.btnFlipCamera.setOnClickListener {
+            flipCamera()
+        }
+        //nút flash
+        binding.btnFlash.setOnClickListener {
+            turnFlash()
+        }
+
+        //nút thay đổi tỉ lệ khung hình
+        binding.txtRatioAspect.setOnClickListener{
+            changeAspectRatio()
+        }
+
+        //nút thay đổi camera mode
+        binding.btnChangeModeOfCamera.setOnClickListener {
+            changeModeOfCamera()
+        }
 
         //sự kiện khi nhấn vào ảnh gần đây
         binding.imgViewRecentImage.setOnClickListener {
@@ -133,7 +147,7 @@ class CameraActivity : AppCompatActivity() {
             .setTargetRotation(rotation)
             .build()
             .also {
-                it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
+                it.surfaceProvider = binding.viewFinder.surfaceProvider
             }
 
         val recorder = Recorder.Builder()
@@ -153,21 +167,10 @@ class CameraActivity : AppCompatActivity() {
             .setTargetRotation(rotation)
             .build()
 
-        cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-        orientationEventListener = object : OrientationEventListener(this) {
-            override fun onOrientationChanged(orientation: Int) {
-                val myRotation = when (orientation) {
-                    in 45..134 -> Surface.ROTATION_270
-                    in 135..224 -> Surface.ROTATION_180
-                    in 225..314 -> Surface.ROTATION_90
-                    else -> Surface.ROTATION_0
-                }
-                imageCapture.targetRotation = myRotation
-                videoCapture.targetRotation = myRotation
-            }
-        }
-        orientationEventListener?.enable()
+        // Sử dụng lensFacing để xác định cameraSelector
+        cameraSelector = CameraSelector.Builder()
+            .requireLensFacing(lensFacing)
+            .build()
 
         try {
             cameraProvider.unbindAll()
@@ -200,7 +203,7 @@ class CameraActivity : AppCompatActivity() {
         }
 
         val fileName = "VID_" + SimpleDateFormat(
-            "yyyy-MM-dd_HH-mm-ss-SSS",
+            getString(R.string.date_time_format),
             Locale.getDefault()
         ).format(System.currentTimeMillis()) + ".mp4"
 
@@ -234,7 +237,7 @@ class CameraActivity : AppCompatActivity() {
                     }
                     is VideoRecordEvent.Finalize -> {
                         if (!recordEvent.hasError()) {
-                            val message = "Video đã được lưu vào thư viện! Đường dẫn: ${recordEvent.outputResults.outputUri}"
+                            val message = getString(R.string.capture_video_success_message)
                             StyleableToast.makeText(this, message, R.style.success_toast).show()
                         } else {
                             recording?.close()
@@ -253,7 +256,6 @@ class CameraActivity : AppCompatActivity() {
             }
     }
 
-
     private fun takePhoto() {
         val imageFolder = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
@@ -266,7 +268,7 @@ class CameraActivity : AppCompatActivity() {
 
         // tên file: IMG_2024-06-09_6-9-69.jpg
         val fileName = "IMG_" + SimpleDateFormat(
-            "yyyy-MM-dd_HH-mm-ss-SSS",
+            getString(R.string.date_time_format),
             Locale.getDefault()
         ).format(System.currentTimeMillis()) + ".jpeg"
 
@@ -308,7 +310,7 @@ class CameraActivity : AppCompatActivity() {
 
                     StyleableToast.makeText(
                         this@CameraActivity,
-                        "Thành công! Uri của ảnh: $savedUri",
+                        getString(R.string.take_photo_success_message),
                         R.style.success_toast
                     ).show()
                     // Cập nhật MediaStore với file vừa chụp
@@ -317,7 +319,7 @@ class CameraActivity : AppCompatActivity() {
                         arrayOf(savedUri.path),
                         null
                     ) { path, uri ->
-                        Log.d("CameraActivity", "File scanned into MediaStore: $path, Uri: $uri")
+                        Log.d("CameraActivity", "${getString(R.string.check_uri_string)} $path, Uri: $uri")
                     }
                     Log.d("image_uri", "${outputFileResults.savedUri}")
                 }
@@ -332,11 +334,68 @@ class CameraActivity : AppCompatActivity() {
             })
     }
 
+    // Kiểm tra quyền có trong danh sách multiplePermissionNameList
+    private fun checkMultiplePermission(): Boolean {
+        val listPermissionNeeded = arrayListOf<String>()
+        for (permission in multiplePermissionNameList) {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                listPermissionNeeded.add(permission)
+            }
+        }
+        return if (listPermissionNeeded.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, listPermissionNeeded.toTypedArray(), PERMISSION_REQUEST_CODE)
+            false
+        } else {
+            true
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty()) {
+                var allGranted = true
+                var permanentlyDenied = false
+
+                for ((index, result) in grantResults.withIndex()) {
+                    if (result == PackageManager.PERMISSION_DENIED) {
+                        allGranted = false
+                        if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[index])) {
+                            permanentlyDenied = true
+                        }
+                    }
+                }
+
+                if (allGranted) {
+                    startCamera()
+                } else {
+                    if (permanentlyDenied) {
+                        // Mở cài đặt ứng dụng vì có quyền bị từ chối vĩnh viễn
+                        appSettingOpen(this)
+                    } else {
+                        // Hiển thị cảnh báo yêu cầu cấp quyền
+                        warningPermissionDialog(this) { _, which ->
+                            if (which == DialogInterface.BUTTON_POSITIVE) {
+                                checkMultiplePermission()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     private fun startRecordingTimer() {
         binding.txtTimeRecording.visible()
         timerHandler = Handler(Looper.getMainLooper())
         timerRunnable = object : Runnable {
+            @SuppressLint("DefaultLocale")
             override fun run() {
                 val elapsedMillis = System.currentTimeMillis() - recordingStartTime
                 val seconds = (elapsedMillis / 1000) % 60
@@ -345,18 +404,19 @@ class CameraActivity : AppCompatActivity() {
                 timerHandler?.postDelayed(this, 1000) // Cập nhật mỗi giây
             }
         }
-        timerHandler?.post(timerRunnable!!)
+        timerHandler?.post(timerRunnable as Runnable)
     }
-    // Hàm để dừng bộ đếm thời gian
+
+    // dừng bộ đếm thời gian
     private fun stopRecordingTimer() {
-        timerHandler?.removeCallbacks(timerRunnable!!)
+        timerRunnable?.let { timerHandler?.removeCallbacks(it) }
         binding.txtTimeRecording.invisible()
     }
 
 
     private fun setUpZoom() {
-        // Initialize ScaleGestureDetector for zoom handling
         val listener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            @SuppressLint("SetTextI18n")
             override fun onScale(detector: ScaleGestureDetector): Boolean {
                 val currentZoomRatio = camera.cameraInfo.zoomState.value?.zoomRatio ?: 1f
                 val delta = detector.scaleFactor
@@ -394,7 +454,7 @@ class CameraActivity : AppCompatActivity() {
 
         binding.btnZoomIn.setOnClickListener {
             val currentZoomRatio = camera.cameraInfo.zoomState.value?.zoomRatio ?: 1f
-            val newZoomRatio = currentZoomRatio + 0.5f // Tăng zoom ratio lên 0.5
+            val newZoomRatio = currentZoomRatio + RATIO_ZOOM // Tăng zoom ratio lên 0.5
             camera.cameraControl.setZoomRatio(
                 newZoomRatio.coerceAtMost(
                     camera.cameraInfo.zoomState.value?.maxZoomRatio ?: newZoomRatio
@@ -404,8 +464,8 @@ class CameraActivity : AppCompatActivity() {
         }
 
         binding.btnZoomOut.setOnClickListener {
-            val currentZoomRatio = camera.cameraInfo.zoomState.value?.zoomRatio ?: 1f
-            val newZoomRatio = currentZoomRatio - 0.5f // Giảm zoom ratio xuống 0.5
+            val currentZoomRatio = camera.cameraInfo.zoomState.value?.zoomRatio ?: MIN_RATIO_ZOOM
+            val newZoomRatio = currentZoomRatio - RATIO_ZOOM // Giảm zoom ratio xuống 0.5
             camera.cameraControl.setZoomRatio(
                 newZoomRatio.coerceAtLeast(
                     camera.cameraInfo.zoomState.value?.minZoomRatio ?: newZoomRatio
@@ -415,6 +475,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun updateZoomRatioText() {
         camera.cameraInfo.zoomState.observe(this) { zoomState ->
             val zoomRatio = zoomState.zoomRatio
@@ -422,8 +483,8 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    private fun btnChangeAspectRatio_EventClickListener() {
-        binding.txtRatioAspect.setOnClickListener {
+    @SuppressLint("SetTextI18n")
+    private fun changeAspectRatio() {
             if (aspectRatio == AspectRatio.RATIO_16_9) {
                 aspectRatio = AspectRatio.RATIO_4_3
                 setAspectRatio("H,4:3")
@@ -435,7 +496,6 @@ class CameraActivity : AppCompatActivity() {
             }
             // Thiết lập lại camera sau khi xử lí xong
             bindCameraUseCases()
-        }
     }
 
     private fun setAspectRatio(ratio: String) {
@@ -461,13 +521,13 @@ class CameraActivity : AppCompatActivity() {
         } else if (lensFacing == CameraSelector.LENS_FACING_FRONT) {// Nếu người dùng đang sử dụng camera trước
             StyleableToast.makeText(
                 this@CameraActivity,
-                "Flash không khả dụng ở camera trước!",
+                getString(R.string.flash_not_available_front_camera_message),
                 R.style.error_toast
             ).show()
         } else {// Nếu không có flash
             StyleableToast.makeText(
                 this@CameraActivity,
-                "Flash không khả dụng trên thiết bị này!",
+                getString(R.string.unavailable_flash_message),
                 R.style.error_toast
             ).show()
         }
@@ -486,129 +546,42 @@ class CameraActivity : AppCompatActivity() {
 
     // Bắt đầu camera
     private fun startCamera() {
-        val cameraProviderFeature = ProcessCameraProvider.getInstance(this)
-        cameraProviderFeature.addListener({
-            cameraProvider = cameraProviderFeature.get()
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+        cameraProviderFuture.addListener(Runnable {
+            cameraProvider = cameraProviderFuture.get()
             bindCameraUseCases()
         }, ContextCompat.getMainExecutor(this))
     }
 
-    // Kiểm tra quyền có trong danh sách multiplePermissionNameList
-    private fun checkMultiplePermission(): Boolean {
-        val listPermissionNeeded = arrayListOf<String>()
-        for (permission in multiplePermissionNameList) {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    permission
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                listPermissionNeeded.add(permission)
-            }
-        }
-        return if (listPermissionNeeded.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, listPermissionNeeded.toTypedArray(), 535)
-            false
-        } else {
-            true
-        }
+    private fun turnFlash(){
+        binding.btnFlash.isEnabled = false
+        setIconFlash(camera)
+        Handler(Looper.getMainLooper()).postDelayed({
+            binding.btnFlash.isEnabled = true // Khôi phục trạng thái nút
+        }, 1500)
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray,
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (requestCode == 535) {
-            if (grantResults.isNotEmpty()) {
-                var allGranted = true
-                var permanentlyDenied = false
-
-                for ((index, result) in grantResults.withIndex()) {
-                    if (result == PackageManager.PERMISSION_DENIED) {
-                        allGranted = false
-                        if (!ActivityCompat.shouldShowRequestPermissionRationale(
-                                this,
-                                permissions[index]
-                            )
-                        ) {
-                            permanentlyDenied = true
-                        }
-                    }
-                }
-
-                if (allGranted) {
-                    // Tất cả các quyền đã được cấp, khởi chạy camera
-                    startCamera()
-                } else {
-                    if (permanentlyDenied) {
-                        // Mở cài đặt ứng dụng vì có quyền bị từ chối vĩnh viễn
-                        appSettingOpen(this)
-                    } else {
-                        // Hiển thị cảnh báo yêu cầu cấp quyền
-                        warningPermissionDialog(this) { dialog, which ->
-                            if (which == DialogInterface.BUTTON_POSITIVE) {
-                                checkMultiplePermission()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun btnFlash_EventClickListener() {
-
-        binding.btnFlash.setOnClickListener {
-            binding.btnFlash.isEnabled = false
-            setIconFlash(camera)
-            Handler(Looper.getMainLooper()).postDelayed({
-                binding.btnFlash.isEnabled = true // Khôi phục trạng thái nút
-            }, 1500)
-        }
-
-    }
-
-    private fun btnFlip_EventClickListener() {
-        binding.btnFlipCamera.setOnClickListener {
-            flipCamera()
-        }
-    }
 
     private fun flipCamera() {
-        if (lensFacing == CameraSelector.LENS_FACING_FRONT)
-            lensFacing = CameraSelector.LENS_FACING_BACK
+        lensFacing = if (lensFacing == CameraSelector.LENS_FACING_FRONT)
+            CameraSelector.LENS_FACING_BACK
         else
-            lensFacing = CameraSelector.LENS_FACING_FRONT
+            CameraSelector.LENS_FACING_FRONT
         bindCameraUseCases()
     }
 
-    private fun btnCapture_EventClickListener() {
-        binding.btnTakePhoto.setOnClickListener {
 
-            if (isPhoto) {
-                takePhoto()
-            } else {
-                captureVideo()
-            }
+    private fun changeModeOfCamera() {
+        isPhoto = !isPhoto
 
-        }
-    }
-
-    private fun btnChangeCameraMode_EventClickListener() {
-        binding.btnChangeModeOfCamera.setOnClickListener {
-            isPhoto = !isPhoto
-
-            if (isPhoto) {
-                binding.btnChangeModeOfCamera.setImageResource(R.drawable.baseline_videocam_24)
-                binding.btnTakePhoto.setImageResource(R.drawable.baseline_camera_24)
-                binding.txtTimeRecording.visibility = View.GONE
-            } else {
-                binding.btnChangeModeOfCamera.setImageResource(R.drawable.baseline_camera_24)
-                binding.btnTakePhoto.setImageResource(R.drawable.baseline_fiber_manual_record_24)
-                binding.txtTimeRecording.visibility = View.VISIBLE
-            }
+        if (isPhoto) {
+            binding.btnChangeModeOfCamera.setImageResource(R.drawable.baseline_videocam_24)
+            binding.btnTakePhoto.setImageResource(R.drawable.baseline_camera_24)
+            binding.txtTimeRecording.visibility = View.GONE
+        } else {
+            binding.btnChangeModeOfCamera.setImageResource(R.drawable.baseline_camera_24)
+            binding.btnTakePhoto.setImageResource(R.drawable.baseline_fiber_manual_record_24)
+            binding.txtTimeRecording.visibility = View.VISIBLE
         }
     }
 
@@ -622,7 +595,7 @@ class CameraActivity : AppCompatActivity() {
         isBackClicked = true
         StyleableToast.makeText(
             this@CameraActivity,
-            "Nhấn back lần nữa để thoát",
+            getString(R.string.warning_back_message),
             R.style.warning_toast
         ).show()
 

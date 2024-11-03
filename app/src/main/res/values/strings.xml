@@ -1,5 +1,18 @@
 <resources>
     <string name="app_name">Photos</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="date_time_format">yyyy-MM-dd_HH-mm-ss-SSS</string>
+    <string name="capture_video_success_message">Video đã được lưu vào thư viện!</string>
+    <string name="take_photo_success_message">Ảnh đã được lưu vào thư viện!</string>
+    <string name="check_uri_string">File scanned into MediaStore:</string>
+    <string name="flash_not_available_front_camera_message">Flash không khả dụng ở camera trước!</string>
+    <string name="unavailable_flash_message">Flash không khả dụng trên thiết bị này!</string>
+    <string name="warning_back_message">Nhấn back lần nữa để thoát</string>
+    <string name="cant_delete_video_message">Không thể xóa media. Vị trí không hợp lệ!</string>
+    <string name="share_title">Chia sẻ qua</string>
+    <string name="rename_success_message">Đổi tên thành công</string>
+    <string name="rename_fail_message">Không thể đổi tên media</string>
+    <string name="error_rename_message">Đổi tên thất bại: </string>
+    <string name="crop_image_success_message">Ảnh đã cắt được lưu vào thư viện ảnh</string>
+    <string name="delete_success_message">Xóa thành công!</string>
+    <string name="delete_fail_success">Xóa không thành công!</string>
 </resources>

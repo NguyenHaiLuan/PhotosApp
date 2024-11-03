@@ -35,8 +35,12 @@ import java.io.File
 
 class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaListener {
     private lateinit var binding: ActivityDetailMediaBinding
-    private lateinit var mediaList: MutableList<Media> // Đổi thành MutableList
+    private lateinit var mediaList: MutableList<Media>
     private lateinit var intentSenderLauncher: ActivityResultLauncher<IntentSenderRequest>
+
+    companion object {
+        const val BITMAP_QUALITY = 100
+    }
 
     // -----------------------------------------CODE-----------------------------------------------
 
@@ -46,8 +50,7 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         initUI()
 
         // Nhận data từ intent
-        mediaList = intent.getParcelableArrayListExtra<Media>("mediaList")?.toMutableList()
-            ?: mutableListOf()
+        mediaList = intent.getParcelableArrayListExtra<Media>("mediaList")?.toMutableList() ?: mutableListOf()
         val startPosition = intent.getIntExtra("startPosition", 0)
 
         // Thiết lập ViewPager2 với Adapter
@@ -111,7 +114,7 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
                 } else {
                     StyleableToast.makeText(
                         this,
-                        "Không thể xóa media. Vị trí không hợp lệ.",
+                        getString(R.string.cant_delete_video_message),
                         R.style.error_toast
                     ).show()
                 }
@@ -147,7 +150,7 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
             type = contentResolver.getType(uri) // Lấy loại media
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // Cấp quyền đọc URI
         }
-        startActivity(Intent.createChooser(shareIntent, "Chia sẻ qua:"))
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_title)))
     }
 
     private fun initEditButton(position:Int) {
@@ -172,7 +175,7 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
             val rowsUpdated = contentResolver.update(media.uri, contentValues, null, null)
 
             if (rowsUpdated > 0) {
-                StyleableToast.makeText(this, "Đổi tên thành công", R.style.success_toast).show()
+                StyleableToast.makeText(this, getString(R.string.rename_success_message), R.style.success_toast).show()
                 mediaList[position] = media.copy(name = newName)
                 binding.mediaName.text = newName
                 MediaScannerConnection.scanFile(this, arrayOf(media.uri.toString()), null, null)
@@ -182,20 +185,19 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
                 resultIntent.putExtra("renamedImage", newName)
                 setResult(Activity.RESULT_OK, resultIntent)
             } else {
-                StyleableToast.makeText(this, "Không thể đổi tên media", R.style.error_toast).show()
+                StyleableToast.makeText(this, getString(R.string.rename_fail_message), R.style.warning_toast).show()
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            StyleableToast.makeText(this, "Đổi tên thất bại: " + e.message, R.style.error_toast)
+            StyleableToast.makeText(this,  getString(R.string.error_rename_message), R.style.error_toast)
                 .show()
         }
     }
 
-    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == Crop.REQUEST_CROP && resultCode == RESULT_OK) {
-            val resultUri = Crop.getOutput(data!!) // Lấy URI của ảnh đã cắt
+            val resultUri = Crop.getOutput(data)
             saveCroppedImageToGallery(resultUri)
         }
     }
@@ -214,10 +216,10 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         uriResult?.let {
             contentResolver.openOutputStream(it).use { outputStream ->
                 if (outputStream != null) {
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                bitmap.compress(Bitmap.CompressFormat.JPEG, BITMAP_QUALITY, outputStream)
                 }
             }
-            StyleableToast.makeText(this, "Ảnh đã cắt được lưu vào thư viện ảnh.", R.style.success_toast).show()
+            StyleableToast.makeText(this, getString(R.string.crop_image_success_message), R.style.success_toast).show()
 
             // Trả lại URI mới cho MainActivity
             val resultIntent = Intent()
@@ -250,10 +252,10 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
             else -> {
                 try {
                     resolver.delete(uri, null, null)
-                    StyleableToast.makeText(this, "Xóa thành công!", R.style.success_toast).show()
+                    StyleableToast.makeText(this, getString(R.string.delete_success_message), R.style.success_toast).show()
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    StyleableToast.makeText(this, "Xóa không thành công!", R.style.error_toast)
+                    StyleableToast.makeText(this, getString(R.string.delete_fail_success), R.style.error_toast)
                         .show()
                 }
             }
