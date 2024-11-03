@@ -130,10 +130,12 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
 
         //Sự kiện cho nút ColorFilter
         binding.btnColorFilter.setOnClickListener {
+            val currentPosition = binding.viewPager.currentItem
             val intent = Intent(this@DetailMediaActivity, ColorFilterImageActivity::class.java)
-            intent.putExtra(ColorFilterImageActivity.INTEND_CODE, mediaList[startPosition])
+            intent.putExtra(ColorFilterImageActivity.INTEND_CODE, mediaList[currentPosition])
             startActivityForResult(intent, REQUEST_CODE_COLOR_FILTER)
         }
+
 
         // Xử lý kết quả sau khi thực hiện IntentSender để xóa
         intentSenderLauncher = registerForActivityResult(StartIntentSenderForResult()) { result ->
@@ -325,7 +327,7 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
     }
 
     private fun saveCroppedImageToGallery(uri: Uri) {
-        // Lưu ảnh đã cắt vào thư viện ảnh
+        // Lưu ảnh đã cắt vào thư viện
         val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
         val values = ContentValues().apply {
             put(
@@ -367,7 +369,6 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         if (currentPos in mediaList.indices) {
             // Xóa item khỏi danh sách dữ liệu
             mediaList.removeAt(currentPos)
-            // Thông báo cho adapter về sự thay đổi
             adapter?.notifyItemRemoved(currentPos)
         }
 
@@ -382,9 +383,7 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
                 val resultIntent = Intent()
                 setResult(Activity.RESULT_OK, resultIntent)
                 finish()
-            }
-
-            else -> {
+            } else -> {
                 try {
                     resolver.delete(uri, null, null)
                     StyleableToast.makeText(

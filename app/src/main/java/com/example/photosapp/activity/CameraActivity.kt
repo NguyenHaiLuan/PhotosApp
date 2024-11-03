@@ -144,10 +144,12 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun bindCameraUseCases() {
+        // lấy hướng xoay hiện tại của màn hình
         val rotation = getDisplayRotation()
 
+        //hiển thị luồng xem trước (preview) từ camera trên màn hình
         val preview = Preview.Builder()
-            .setTargetRotation(rotation)
+            .setTargetRotation(rotation) // Thiết lập hướng xoay cho preview khớp với hướng màn hình
             .build()
             .also {
                 it.surfaceProvider = binding.viewFinder.surfaceProvider
@@ -170,13 +172,15 @@ class CameraActivity : AppCompatActivity() {
             .setTargetRotation(rotation)
             .build()
 
-        // Sử dụng lensFacing để xác định cameraSelector
+        // xác định camera nào sẽ được sử dụng (camera trước hoặc sau)
         cameraSelector = CameraSelector.Builder()
             .requireLensFacing(lensFacing)
             .build()
 
         try {
             cameraProvider.unbindAll()
+
+            // liên kết các use case (preview, imageCapture, videoCapture) với camera được chọn
             camera = cameraProvider.bindToLifecycle(
                 this,
                 cameraSelector,

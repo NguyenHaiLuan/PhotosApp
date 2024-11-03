@@ -149,7 +149,6 @@ class ColorFilterImageActivity : AppCompatActivity() {
         return bitmap
     }
 
-
     private fun initUI() {
         enableEdgeToEdge()
         binding = ActivityColorFilterImageBinding.inflate(layoutInflater)
