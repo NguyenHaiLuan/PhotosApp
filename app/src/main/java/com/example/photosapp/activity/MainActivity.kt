@@ -254,6 +254,18 @@ class MainActivity : AppCompatActivity() {
         return tempList.sortedByDescending { it.dateAdded }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == Activity.RESULT_OK) {
+            refreshMediaList()
+        }
+    }
+
+    private fun refreshMediaList() {
+        loadAllMedia()
+        adapter.notifyDataSetChanged()
+    }
+
     private fun initUI() {
         enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)

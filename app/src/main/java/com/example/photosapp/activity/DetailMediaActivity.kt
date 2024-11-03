@@ -61,6 +61,7 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
     companion object {
         const val BITMAP_QUALITY = 100
         const val PERMISSION_REQUEST_CODE = 333
+        private const val REQUEST_CODE_COLOR_FILTER = 1001
     }
 
     // -----------------------------------------CODE-----------------------------------------------
@@ -130,8 +131,8 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         //Sự kiện cho nút ColorFilter
         binding.btnColorFilter.setOnClickListener {
             val intent = Intent(this@DetailMediaActivity, ColorFilterImageActivity::class.java)
-            intent.putExtra("mediaNeed", mediaList[startPosition])
-            startActivity(intent)
+            intent.putExtra(ColorFilterImageActivity.INTEND_CODE, mediaList[startPosition])
+            startActivityForResult(intent, REQUEST_CODE_COLOR_FILTER)
         }
 
         // Xử lý kết quả sau khi thực hiện IntentSender để xóa
@@ -316,6 +317,10 @@ class DetailMediaActivity : AppCompatActivity(), RenameMediaDialog.RenameMediaLi
         if (requestCode == Crop.REQUEST_CROP && resultCode == RESULT_OK) {
             val resultUri = Crop.getOutput(data)
             saveCroppedImageToGallery(resultUri)
+        }
+
+        if (requestCode == REQUEST_CODE_COLOR_FILTER && resultCode == Activity.RESULT_OK) {
+            setResult(Activity.RESULT_OK)
         }
     }
 
